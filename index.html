@@ -152,17 +152,37 @@ body {
 
 @media (max-width: 640px) {
   #carousel {
-    aspect-ratio: 3/4;
+    aspect-ratio: 4/5;
+    min-height: 400px;
+  }
+  
+  #carouselTrack > div > div {
+    display: flex !important;
+    flex-direction: column !important;
+    background: var(--bg-primary) !important;
+  }
+  
+  #carouselTrack img {
+    position: relative !important;
+    object-fit: cover !important;
+    width: 100% !important;
+    height: auto !important;
+    flex: 1;
   }
   
   #carouselTrack .absolute.bottom-0 {
-    position: static !important;
+    position: relative !important;
     padding: 1rem !important;
-    background: transparent !important;
+    background: var(--bg-secondary) !important;
+    border-top: 1px solid var(--border-color);
   }
   
   #carouselTrack .bg-gradient-to-t {
-    display: none;
+    display: none !important;
+  }
+  
+  #carouselTrack .absolute.inset-0.flex {
+    display: none !important;
   }
   
   #prevSlide, #nextSlide {
@@ -254,7 +274,39 @@ body {
   #heroHighlights {
     grid-template-columns: 1fr !important;
   }
-}
+  
+  /* ← ADD NEW CODE HERE */
+  #home .grid {
+    gap: 2rem !important;
+  }
+  
+  #home .flex-col.sm\:flex-row {
+    flex-direction: column !important;
+    width: 100%;
+  }
+  
+  #home .flex-col.sm\:flex-row > * {
+    width: 100% !important;
+  }
+  
+  /* Fix button overflow */
+  .inline-flex.items-center {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  
+  /* Fix hero highlights */
+  #heroHighlights > div {
+    min-width: 0;
+  }
+  
+  /* Ensure proper spacing */
+  section > div {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}  ← KEEP THIS CLOSING BRACE
 
     .img-placeholder {
       background: linear-gradient(135deg, rgba(255,107,0,0.15) 0%, rgba(255,107,0,0.05) 100%);
@@ -431,6 +483,8 @@ body {
       user-select: none;
       -webkit-user-select: none;
     }
+
+
   </style>
 </head>
 <body class="antialiased transition-colors duration-300" style="background-color: var(--bg-primary); color: var(--text-primary);">
@@ -730,7 +784,7 @@ body {
         <div class="max-w-4xl mx-auto mt-4 flex justify-center">
           <a id="galleryWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-5 py-3 text-sm text-white hover:bg-[#ff7b1b]">
             <i data-lucide="message-circle" class="h-4 w-4"></i>
-            Order This Design
+            Send us a DM
           </a>
         </div>
       </div>
@@ -770,7 +824,7 @@ body {
             </div>
             <a id="lightboxWhatsApp" href="#" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-4 py-2 text-sm text-white hover:bg-[#ff7b1b]">
               <i data-lucide="message-circle" class="h-4 w-4"></i>
-              Order This Design
+              Order Your Design Today
             </a>
           </div>
         </div>
@@ -1260,15 +1314,17 @@ async function loadTeamMembers() {
       const track = document.getElementById('carouselTrack');
       track.innerHTML = carouselSlides.map((slide, index) => `
         <div class="inline-block align-top w-full h-full">
-  <div class="h-full bg-black/30 relative cursor-pointer group" data-carousel-index="${index}">
-            <img src="${slide.imageUrl}" alt="${slide.title}" class="absolute inset-0 h-full w-full object-contain transition-transform duration-500 group-hover:scale-105">
-            <div class="absolute inset-0 bg-gradient-to-t from-[#0A0F1C]/80 via-transparent to-transparent"></div>
+  <div class="h-full relative cursor-pointer group flex flex-col" data-carousel-index="${index}" style="background: var(--bg-primary);">
+  <div class="flex-1 relative overflow-hidden">
+    <img src="${slide.imageUrl}" alt="${slide.title}" loading="lazy" class="w-full h-full object-cover">
+  </div>
+  <div class="absolute inset-0 bg-gradient-to-t from-[#0A0F1C]/80 via-transparent to-transparent pointer-events-none"></div>
             <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               <div class="rounded-full bg-white/20 backdrop-blur-sm p-4 border border-white/30">
                 <i data-lucide="maximize-2" class="h-6 w-6 text-white"></i>
               </div>
             </div>
-            <div class="absolute bottom-0 left-0 right-0 p-5">
+            <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
               <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80">
                 <i data-lucide="sparkles" class="h-4 w-4 text-[#FF6B00]"></i>
                 ${slide.title}
