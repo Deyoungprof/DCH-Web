@@ -1,0 +1,24 @@
+{
+  "name": "Deyoungprof Creative Hub",
+  "short_name": "Deyoungprof",
+  "description": "Forward-thinking design studio in Lagos, Nigeria. We craft standout designs — logos, brand kits, flyers, wedding and event graphics, academic covers, and more.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0F1C",
+  "theme_color": "#FF6B00",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
