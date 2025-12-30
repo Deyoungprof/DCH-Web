@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting...</title>
+  <script>
+    // Store the current path for GitHub Pages SPA routing
+    sessionStorage.redirect = location.href;
+    
+    // Redirect to index.html in the same directory
+    const base = location.pathname.split('/').slice(0, -1).join('/');
+    location.replace(base ? base + '/index.html' : '/index.html');
+  </script>
+</head>
+<body>
+  <p>Redirecting to home page...</p>
+</body>
+</html>
