@@ -133,6 +133,14 @@ body {
   mix-blend-mode: multiply !important;
 }
 
+/* Change background image in light mode */
+[data-theme="light"] #hero-bg-image {
+  background-image: url('https://i.shgcdn.com/df9b4b39-4cb1-4154-90f5-697f2509131b/-/format/auto/-/quality/normal/') !important;
+  filter: invert(1) !important;
+  opacity: 0.05 !important;
+  mix-blend-mode: multiply !important;
+}
+
 #carouselTrack {
   font-size: 0;
   letter-spacing: 0;
@@ -397,7 +405,7 @@ body {
   <div class="absolute inset-0 bg-gradient-to-b from-[#0A0F1C] via-[#0B1224] to-[#0B0F19]"></div>
       <div class="absolute -top-24 -left-24 h-72 w-72 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(60% 60% at 50% 50%, rgba(255,107,0,0.20) 0%, rgba(255,107,0,0.05) 60%, transparent 100%);"></div>
       <div class="absolute -bottom-32 -right-16 h-96 w-96 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(60% 60% at 50% 50%, rgba(255,107,0,0.18) 0%, rgba(255,107,0,0.04) 60%, transparent 100%);"></div>
-      <div id="hero-bg-image" class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&auto=format&fit=crop')] bg-center bg-cover opacity-[0.06] mix-blend-screen"></div>
+      <div id="hero-bg-image" class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=1200&auto=format&fit=crop')] bg-center bg-cover opacity-[0.06] mix-blend-screen"></div>
     </div>
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
