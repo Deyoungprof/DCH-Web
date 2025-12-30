@@ -3,9 +3,9 @@ const STATIC_CACHE = 'deyoungprof-static-v2';
 const DYNAMIC_CACHE = 'deyoungprof-dynamic-v2';
 
 const STATIC_ASSETS = [
-  '/',
-  '/manifest.json',
-  '/logo.png',
+  './',
+  './manifest.json',
+  './logo.png',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap'
