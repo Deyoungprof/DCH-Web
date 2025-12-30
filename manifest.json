@@ -1,6 +1,6 @@
 {
   "name": "Deyoungprof Creative Hub",
-  "short_name": "Deyoungprof",
+  "short_name": "DCH Web App",
   "description": "Forward-thinking design studio in Lagos, Nigeria. We craft standout designs — logos, brand kits, flyers, wedding and event graphics, academic covers, and more.",
   "start_url": "./",
   "display": "standalone",
@@ -22,3 +22,4 @@
     }
   ]
 }
+
