@@ -133,6 +133,14 @@ body {
   mix-blend-mode: multiply !important;
 }
 
+/* Change background image in light mode */
+[data-theme="light"] #hero-bg-image {
+  background-image: url('https://i.shgcdn.com/df9b4b39-4cb1-4154-90f5-697f2509131b/-/format/auto/-/quality/normal/') !important;
+  filter: invert(1) !important;
+  opacity: 0.05 !important;
+  mix-blend-mode: multiply !important;
+}
+
 #carouselTrack {
   font-size: 0;
   letter-spacing: 0;
@@ -140,6 +148,112 @@ body {
 
 #carouselTrack > div {
   font-size: 1rem; /* Reset font-size for children */
+}
+
+@media (max-width: 640px) {
+  #carousel {
+    aspect-ratio: 3/4;
+  }
+  
+  #carouselTrack .absolute.bottom-0 {
+    position: static !important;
+    padding: 1rem !important;
+    background: transparent !important;
+  }
+  
+  #carouselTrack .bg-gradient-to-t {
+    display: none;
+  }
+  
+  #prevSlide, #nextSlide {
+    padding: 0.75rem !important;
+    width: 44px;
+    height: 44px;
+  }
+  
+  #carouselDots button {
+    width: 32px !important;
+    height: 8px !important;
+  }
+  
+  #prevCard, #nextCard {
+    padding: 0.75rem 1rem !important;
+    min-height: 44px;
+  }
+  
+  #closeGallery, #closeLightbox {
+    padding: 0.75rem !important;
+    width: 44px;
+    height: 44px;
+  }
+  
+  .stack-card {
+    width: 90% !important;
+  }
+  
+  #site-header {
+    position: fixed !important;
+    z-index: 100;
+  }
+  
+  #mobileMenuBtn {
+    padding: 0.75rem !important;
+    width: 44px;
+    height: 44px;
+  }
+  
+  section {
+    scroll-margin-top: 6rem;
+  }
+  
+  h1 {
+    font-size: 2.25rem !important;
+    line-height: 1.2 !important;
+  }
+  
+  h2 {
+    font-size: 1.75rem !important;
+  }
+  
+  .card-stack {
+    height: 400px !important;
+  }
+  
+  #portfolioGallery .px-4,
+  #imageLightbox .px-4 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  #contactForm input,
+  #contactForm textarea {
+    font-size: 16px !important;
+  }
+  
+  #contactForm button,
+  #contactForm a {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .text-5xl {
+    font-size: 2rem !important;
+  }
+  
+  .text-6xl {
+    font-size: 2.5rem !important;
+  }
+  
+  a, button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  #heroHighlights {
+    grid-template-columns: 1fr !important;
+  }
 }
 
     .img-placeholder {
@@ -397,7 +511,7 @@ body {
   <div class="absolute inset-0 bg-gradient-to-b from-[#0A0F1C] via-[#0B1224] to-[#0B0F19]"></div>
       <div class="absolute -top-24 -left-24 h-72 w-72 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(60% 60% at 50% 50%, rgba(255,107,0,0.20) 0%, rgba(255,107,0,0.05) 60%, transparent 100%);"></div>
       <div class="absolute -bottom-32 -right-16 h-96 w-96 rounded-full opacity-20 blur-3xl" style="background: radial-gradient(60% 60% at 50% 50%, rgba(255,107,0,0.18) 0%, rgba(255,107,0,0.04) 60%, transparent 100%);"></div>
-      <div id="hero-bg-image" class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&auto=format&fit=crop')] bg-center bg-cover opacity-[0.06] mix-blend-screen"></div>
+      <div id="hero-bg-image" class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=1200&auto=format&fit=crop')] bg-center bg-cover opacity-[0.06] mix-blend-screen"></div>
     </div>
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
@@ -1225,6 +1339,23 @@ async function loadTeamMembers() {
 
       // Auto-rotate
       setInterval(() => goToSlide(carouselIndex + 1), 6000);
+
+      // Touch swipe support
+      let touchStartX = 0;
+      let touchEndX = 0;
+      
+      track.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+      
+      track.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        const diff = touchStartX - touchEndX;
+        if (Math.abs(diff) > 50) {
+          if (diff > 0) goToSlide(carouselIndex + 1);
+          else goToSlide(carouselIndex - 1);
+        }
+      }, { passive: true });
     }
 
     // Load services
@@ -1471,6 +1602,23 @@ async function loadTeamMembers() {
 
     // Call setup once
     setupGalleryNavigation();
+    
+    // Add touch swipe to gallery
+    let galleryTouchStartX = 0;
+    const cardStack = document.getElementById('cardStack');
+    
+    cardStack.addEventListener('touchstart', (e) => {
+      galleryTouchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    
+    cardStack.addEventListener('touchend', (e) => {
+      const touchEndX = e.changedTouches[0].screenX;
+      const diff = galleryTouchStartX - touchEndX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) navigateGallery(1);
+        else navigateGallery(-1);
+      }
+    }, { passive: true });
 
     // Keyboard navigation for gallery and lightbox
     document.addEventListener('keydown', (e) => {
