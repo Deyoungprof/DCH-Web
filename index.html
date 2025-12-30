@@ -11,7 +11,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/lucide@latest"></script>
-  
+  <!-- PWA Manifest -->
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
 :root {
   --bg-primary: #0A0F1C;
@@ -50,6 +54,28 @@ body {
   font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
   position: relative;
   isolation: isolate;
+}
+
+/* Mobile logo optimization */
+@media (max-width: 640px) {
+  #site-header .h-12.w-12 {
+    height: 40px;
+    width: 40px;
+  }
+  
+  #site-header .flex.flex-col.leading-none {
+    display: none;
+  }
+  
+  #headerLogo, #headerLogoFallback {
+    font-size: 18px;
+  }
+}
+
+/* Ensure logo visibility */
+#headerLogo, #footerLogo {
+  object-fit: contain;
+  padding: 4px;
 }
 
 /* Light mode specific adjustments */
@@ -525,11 +551,24 @@ body {
           <a href="#contact" class="text-sm text-white/70 hover:text-white transition-colors">Contact</a>
         </nav>
 
-        <!-- Header CTAs -->
+       <!-- Header CTAs -->
         <div class="flex items-center gap-3">
+          <!-- Offline Indicator -->
+          <div id="offlineIndicator" class="hidden items-center gap-2 rounded-md border border-red-500/50 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            <i data-lucide="wifi-off" class="h-3 w-3"></i>
+            <span class="hidden sm:inline">Offline</span>
+          </div>
+          
+          <!-- Install App Button -->
+          <button id="installAppBtn" class="hidden items-center gap-2 rounded-md border border-[#FF6B00]/50 bg-[#FF6B00]/10 px-3 py-2 text-sm text-[#FF6B00] hover:bg-[#FF6B00]/20 transition-all">
+            <i data-lucide="download" class="h-4 w-4"></i>
+            <span class="hidden sm:inline">Install App</span>
+          </button>
+
           <button id="themeToggle" class="inline-flex items-center justify-center rounded-md border border-white/10 bg-white/0 p-2 text-white/70 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all" aria-label="Toggle theme">
   <i data-lucide="sun" class="h-4 w-4" id="themeIcon"></i>
 </button>
+
 <a href="#portfolio" class="hidden sm:inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/0 px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all">
   <i data-lucide="images" class="h-4 w-4"></i>
   <span>Portfolio</span>
@@ -691,6 +730,56 @@ body {
       </div>
     </div>
   </section>
+
+<!-- Client Reviews -->
+<section id="reviews" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-3xl mx-auto mb-12">
+      <h2 class="text-2xl sm:text-3xl tracking-tight font-semibold text-white mb-4" style="font-family: 'Nexa Bold','Poppins',sans-serif;">Client Reviews</h2>
+      <p class="text-sm text-white/60">See what our clients say about working with us.</p>
+    </div>
+
+    <div id="reviewsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Loading skeleton -->
+      <div class="rounded-xl border border-white/10 bg-white/5 p-6 skeleton-loading">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="h-12 w-12 rounded-full bg-white/10"></div>
+          <div class="flex-1">
+            <div class="h-4 w-32 bg-white/10 rounded mb-2"></div>
+            <div class="h-3 w-24 bg-white/10 rounded"></div>
+          </div>
+        </div>
+        <div class="h-3 w-full bg-white/10 rounded mb-2"></div>
+        <div class="h-3 w-full bg-white/10 rounded mb-2"></div>
+        <div class="h-3 w-3/4 bg-white/10 rounded"></div>
+      </div>
+      <div class="rounded-xl border border-white/10 bg-white/5 p-6 skeleton-loading">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="h-12 w-12 rounded-full bg-white/10"></div>
+          <div class="flex-1">
+            <div class="h-4 w-32 bg-white/10 rounded mb-2"></div>
+            <div class="h-3 w-24 bg-white/10 rounded"></div>
+          </div>
+        </div>
+        <div class="h-3 w-full bg-white/10 rounded mb-2"></div>
+        <div class="h-3 w-full bg-white/10 rounded mb-2"></div>
+        <div class="h-3 w-3/4 bg-white/10 rounded"></div>
+      </div>
+      <div class="rounded-xl border border-white/10 bg-white/5 p-6 skeleton-loading">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="h-12 w-12 rounded-full bg-white/10"></div>
+          <div class="flex-1">
+            <div class="h-4 w-32 bg-white/10 rounded mb-2"></div>
+            <div class="h-3 w-24 bg-white/10 rounded"></div>
+          </div>
+        </div>
+        <div class="h-3 w-full bg-white/10 rounded mb-2"></div>
+        <div class="h-3 w-full bg-white/10 rounded mb-2"></div>
+        <div class="h-3 w-3/4 bg-white/10 rounded"></div>
+      </div>
+    </div>
+  </div>
+</section>
 
   <!-- Portfolio -->
   <section id="portfolio" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
@@ -945,6 +1034,25 @@ body {
     </div>
   </section>
 
+  <!-- Review Image Lightbox -->
+  <div id="reviewImageLightbox" class="fixed inset-0 z-[110] hidden">
+    <div class="absolute inset-0 bg-black/95 backdrop-blur-md" onclick="closeReviewImageLightbox()"></div>
+    <div class="relative h-full flex flex-col z-10">
+      <div class="flex items-center justify-between px-4 sm:px-6 py-4 bg-black/70 backdrop-blur-xl">
+        <div class="flex items-center gap-3">
+          <i data-lucide="shield-check" class="h-5 w-5 text-[#FF6B00]"></i>
+          <h3 id="reviewImageTitle" class="text-base font-semibold text-white">Client Evidence</h3>
+        </div>
+        <button onclick="closeReviewImageLightbox()" class="inline-flex items-center justify-center rounded-md border border-white/10 bg-white/0 p-2 text-white/80 hover:text-white hover:bg-white/10">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+      </div>
+      <div class="flex-1 flex items-center justify-center p-4 overflow-hidden">
+        <img id="reviewImageSrc" src="" alt="Review evidence" class="max-w-full max-h-full object-contain">
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="border-t border-white/10">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -1045,6 +1153,7 @@ initializeTheme();
   loadSettings(),
   loadCarousel(),
   loadServices(),
+  loadReviews(),
   loadPortfolio(),
   loadHeroHighlights(),
   loadTeamMembers()
@@ -1416,39 +1525,135 @@ async function loadTeamMembers() {
 
     // Load services
     async function loadServices() {
-      try {
-        const q = query(collection(db, 'services'), where('active', '==', true), orderBy('order'));
-        const snapshot = await getDocs(q);
-        
-        const listEl = document.getElementById('servicesList');
-        if (snapshot.empty) {
-          listEl.innerHTML = '<p class="text-white/60 col-span-full">No services available yet.</p>';
-          return;
-        }
-
-        listEl.innerHTML = '';
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const article = document.createElement('article');
-          article.className = 'rounded-xl border border-white/10 bg-white/5 p-5 hover:bg-white/10 hover:border-white/20 transition-colors';
-          article.innerHTML = `
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <i data-lucide="${data.icon}" class="h-5 w-5 text-[#FF6B00]"></i>
-                <h3 class="text-base font-semibold text-white" style="font-family: 'Nexa Bold','Poppins',sans-serif;">${data.name}</h3>
-              </div>
-              <span class="text-sm text-white/80">${data.price}</span>
-            </div>
-            <p class="mt-2 text-sm text-white/60">${data.description}</p>
-          `;
-          listEl.appendChild(article);
-        });
-
-        if (window.lucide) window.lucide.createIcons();
-      } catch (error) {
-        console.error('Services error:', error);
-      }
+  try {
+    const q = query(collection(db, 'services'), where('active', '==', true), orderBy('order'));
+    const snapshot = await getDocs(q);
+    
+    const listEl = document.getElementById('servicesList');
+    if (snapshot.empty) {
+      listEl.innerHTML = '<p class="text-white/60 col-span-full">No services available yet.</p>';
+      return;
     }
+
+    listEl.innerHTML = '';
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const article = document.createElement('article');
+      article.className = 'group rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300';
+      article.innerHTML = `
+        <div class="grid sm:grid-cols-[120px_1fr] gap-4 p-5">
+          <div class="aspect-square rounded-lg overflow-hidden bg-black/20 border border-white/10">
+            <img src="${data.thumbnailUrl || ''}" alt="${data.name}" class="h-full w-full object-cover" loading="lazy">
+          </div>
+          <div class="flex flex-col">
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <div class="flex items-center gap-2">
+                <i data-lucide="${data.icon}" class="h-5 w-5 text-[#FF6B00] flex-shrink-0"></i>
+                <h3 class="text-base font-semibold text-white group-hover:text-[#FF6B00] transition-colors">${data.name}</h3>
+              </div>
+              <span class="text-sm text-white/80 font-medium whitespace-nowrap">${data.price}</span>
+            </div>
+            <p class="text-sm text-white/60 mb-4 flex-1">${data.description}</p>
+            <div class="flex flex-wrap gap-2">
+              <button class="service-view-samples inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all" data-category="${data.category}">
+                <i data-lucide="images" class="h-3 w-3"></i>
+                View Samples
+              </button>
+              <a href="https://wa.me/${siteSettings.contact?.phone || '2348147732687'}?text=${encodeURIComponent('Hello, I\'m interested in: ' + data.name + ' (' + data.price + ')')}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-3 py-2 text-xs text-white hover:bg-[#ff7b1b] transition-colors">
+                <i data-lucide="message-circle" class="h-3 w-3"></i>
+                Order Now
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+      listEl.appendChild(article);
+    });
+
+    // Add click listeners for "View Samples" buttons
+    document.querySelectorAll('.service-view-samples').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const category = btn.dataset.category;
+        if (category && portfolioData[category]) {
+          openGallery(category);
+        } else {
+          showToast('No samples available for this service yet', 'info');
+        }
+      });
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  } catch (error) {
+    console.error('Services error:', error);
+  }
+}
+
+// Load client reviews
+async function loadReviews() {
+  try {
+    const q = query(collection(db, 'reviews'), where('active', '==', true), orderBy('order'));
+    const snapshot = await getDocs(q);
+    
+    const container = document.getElementById('reviewsList');
+    
+    if (snapshot.empty) {
+      container.innerHTML = `
+        <div class="col-span-full text-center py-12">
+          <p class="text-white/40 text-sm">No reviews yet.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = '';
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const card = document.createElement('div');
+      card.className = 'rounded-xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300';
+      
+      // Generate star rating
+      const stars = Array(5).fill(0).map((_, i) => 
+        `<i data-lucide="star" class="h-4 w-4 ${i < data.rating ? 'fill-[#FF6B00] text-[#FF6B00]' : 'text-white/20'}"></i>`
+      ).join('');
+      
+      card.innerHTML = `
+        <div class="flex items-center gap-3 mb-4">
+          <div class="h-12 w-12 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-white/5 flex items-center justify-center text-white font-semibold">
+            ${data.clientName.charAt(0)}
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-semibold text-white">${data.clientName}</h3>
+            <p class="text-xs text-white/60">${data.projectType || 'Client'}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1 mb-3">
+          ${stars}
+        </div>
+        <p class="text-sm text-white/70 leading-relaxed mb-3">${data.review}</p>
+        ${data.imageUrl ? `
+          <div class="mt-3 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-[#FF6B00]/50 transition-colors group" onclick="openReviewImage('${data.imageUrl}', '${data.clientName}')">
+            <img src="${data.imageUrl}" alt="Review evidence from ${data.clientName}" class="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+            <div class="bg-white/5 px-3 py-2 flex items-center gap-2">
+              <i data-lucide="image" class="h-3 w-3 text-[#FF6B00]"></i>
+              <span class="text-xs text-white/60">Click to view evidence</span>
+            </div>
+          </div>
+        ` : ''}
+      `;
+      container.appendChild(card);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  } catch (error) {
+    console.error('Reviews error:', error);
+    const container = document.getElementById('reviewsList');
+    container.innerHTML = `
+      <div class="col-span-full text-center py-12">
+        <p class="text-white/40 text-sm">Unable to load reviews.</p>
+      </div>
+    `;
+  }
+}
 
     // Load portfolio
     async function loadPortfolio() {
@@ -1511,9 +1716,19 @@ async function loadTeamMembers() {
       if (window.lucide) window.lucide.createIcons();
     }
 
+function scrollToPortfolio() {
+  const portfolioSection = document.getElementById('portfolio');
+  if (portfolioSection) {
+    portfolioSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
     // Gallery functions
     function openGallery(category) {
-      if (!portfolioData[category]) return;
+  scrollToPortfolio(); // ADD THIS LINE
+  
+  if (!portfolioData[category]) return;
+  // ... rest of function
       
       currentGallery = portfolioData[category].items;
       currentGalleryIndex = 0;
@@ -1873,6 +2088,118 @@ function initializeTheme() {
       }
     }
     // ========== END THEME TOGGLE FUNCTIONS ==========
+
+    // ========== REVIEW IMAGE LIGHTBOX ==========
+    window.openReviewImage = function(imageUrl, clientName) {
+      const lightbox = document.getElementById('reviewImageLightbox');
+      const img = document.getElementById('reviewImageSrc');
+      const title = document.getElementById('reviewImageTitle');
+      
+      img.src = imageUrl;
+      title.textContent = `Evidence from ${clientName}`;
+      lightbox.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      
+      if (window.lucide) window.lucide.createIcons();
+    };
+
+    window.closeReviewImageLightbox = function() {
+      const lightbox = document.getElementById('reviewImageLightbox');
+      lightbox.classList.add('hidden');
+      document.body.style.overflow = '';
+    };
+    // ========== END REVIEW IMAGE LIGHTBOX ==========
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => {
+        console.log('✅ Service Worker registered');
+        
+        // Check for updates
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showToast('New version available! Refresh to update.', 'info');
+            }
+          });
+        });
+      })
+      .catch(err => console.log('❌ Service Worker registration failed:', err));
+  });
+}
+
+// PWA Install Prompt
+let deferredPrompt;
+const installBtn = document.getElementById('installAppBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.classList.remove('hidden');
+  installBtn.classList.add('inline-flex');
+  if (window.lucide) window.lucide.createIcons();
+});
+
+installBtn?.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  
+  if (outcome === 'accepted') {
+    showToast('App installed successfully!', 'success');
+  }
+  
+  deferredPrompt = null;
+  installBtn.classList.add('hidden');
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  installBtn.classList.add('hidden');
+  showToast('Deyoungprof Creative Hub installed!', 'success');
+});
+
+// Offline Detection
+const offlineIndicator = document.getElementById('offlineIndicator');
+
+function updateOnlineStatus() {
+  if (navigator.onLine) {
+    offlineIndicator?.classList.add('hidden');
+    offlineIndicator?.classList.remove('flex');
+  } else {
+    offlineIndicator?.classList.remove('hidden');
+    offlineIndicator?.classList.add('flex');
+    showToast('You are offline. Some features may be limited.', 'info');
+  }
+  if (window.lucide) window.lucide.createIcons();
+}
+
+window.addEventListener('online', () => {
+  updateOnlineStatus();
+  showToast('Back online!', 'success');
+});
+
+window.addEventListener('offline', updateOnlineStatus);
+
+// Initial check
+updateOnlineStatus();
+
+// Toast function (if not already defined)
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `fixed top-20 right-4 z-[200] rounded-lg border px-4 py-3 shadow-lg animate-slide-in ${
+    type === 'success' ? 'bg-green-500/10 border-green-500/50 text-green-400' :
+    type === 'error' ? 'bg-red-500/10 border-red-500/50 text-red-400' :
+    'bg-blue-500/10 border-blue-500/50 text-blue-400'
+  }`;
+  toast.innerHTML = `<p class="text-sm">${message}</p>`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
   </script>
 </body>
 </html>
