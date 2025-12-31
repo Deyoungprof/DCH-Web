@@ -1042,14 +1042,14 @@ body {
       <div class="flex items-center justify-between px-4 sm:px-6 py-4 bg-black/70 backdrop-blur-xl">
         <div class="flex items-center gap-3">
           <i data-lucide="shield-check" class="h-5 w-5 text-[#FF6B00]"></i>
-          <h3 id="reviewImageTitle" class="text-base font-semibold text-white">Client Evidence</h3>
+          <h3 id="reviewImageTitle" class="text-base font-semibold text-white">Client Testimonial</h3>
         </div>
         <button onclick="closeReviewImageLightbox()" class="inline-flex items-center justify-center rounded-md border border-white/10 bg-white/0 p-2 text-white/80 hover:text-white hover:bg-white/10">
           <i data-lucide="x" class="h-5 w-5"></i>
         </button>
       </div>
       <div class="flex-1 flex items-center justify-center p-4 overflow-hidden">
-        <img id="reviewImageSrc" src="" alt="Review evidence" class="max-w-full max-h-full object-contain">
+        <img id="reviewImageSrc" src="" alt="Review Testimonial" class="max-w-full max-h-full object-contain">
       </div>
     </div>
   </div>
@@ -1633,10 +1633,10 @@ async function loadReviews() {
         <p class="text-sm text-white/70 leading-relaxed mb-3">${data.review}</p>
         ${data.imageUrl ? `
           <div class="mt-3 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-[#FF6B00]/50 transition-colors group" onclick="openReviewImage('${data.imageUrl}', '${data.clientName}')">
-            <img src="${data.imageUrl}" alt="Review evidence from ${data.clientName}" class="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+            <img src="${data.imageUrl}" alt="Review Testimonial from ${data.clientName}" class="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
             <div class="bg-white/5 px-3 py-2 flex items-center gap-2">
               <i data-lucide="image" class="h-3 w-3 text-[#FF6B00]"></i>
-              <span class="text-xs text-white/60">Click to view evidence</span>
+              <span class="text-xs text-white/60">Click to view</span>
             </div>
           </div>
         ` : ''}
@@ -2097,7 +2097,7 @@ function initializeTheme() {
       const title = document.getElementById('reviewImageTitle');
       
       img.src = imageUrl;
-      title.textContent = `Evidence from ${clientName}`;
+      title.textContent = `Testimonial from ${clientName}`;
       lightbox.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
       
@@ -2204,3 +2204,4 @@ function showToast(message, type = 'info') {
   </script>
 </body>
 </html>
+
