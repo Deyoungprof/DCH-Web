@@ -547,10 +547,8 @@ body {
   100% { background-position: -200% 0; }
 }
 
-/* ========== FACEBOOK-STYLE SCROLL SHIMMER ========== */
-
-/* Shimmer wave animation - like Facebook loading */
-@keyframes shimmer-wave {
+/* ========== NEW SHIMMER ANIMATIONS ========== */
+@keyframes shimmer-sweep {
   0% {
     transform: translateX(-100%);
   }
@@ -559,21 +557,34 @@ body {
   }
 }
 
-/* Scroll-triggered shimmer effect */
-.scroll-shimmer {
+@keyframes shimmer-glow {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer-border {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Shimmer Overlay Classes */
+.shimmer-overlay {
   position: relative;
   overflow: hidden;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
-.scroll-shimmer.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.scroll-shimmer::before {
+.shimmer-overlay::before {
   content: '';
   position: absolute;
   top: 0;
@@ -583,29 +594,30 @@ body {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.15) 20%,
-    rgba(255, 255, 255, 0.25) 50%,
-    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.1) 50%,
     transparent 100%
   );
   transform: translateX(-100%);
+  animation: shimmer-sweep 2s infinite;
   pointer-events: none;
   z-index: 1;
-  opacity: 0;
 }
 
-.scroll-shimmer.visible::before {
-  animation: shimmer-wave 1.5s ease-in-out;
-  animation-delay: 0.2s;
+.shimmer-overlay-slow::before {
+  animation: shimmer-sweep 3s infinite;
 }
 
-/* Hover shimmer - only on hover */
-.hover-shimmer {
+.shimmer-overlay-fast::before {
+  animation: shimmer-sweep 1.5s infinite;
+}
+
+/* Shimmer on hover only */
+.shimmer-on-hover {
   position: relative;
   overflow: hidden;
 }
 
-.hover-shimmer::before {
+.shimmer-on-hover::before {
   content: '';
   position: absolute;
   top: 0;
@@ -615,42 +627,72 @@ body {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.15) 50%,
     transparent 100%
   );
   transform: translateX(-100%);
   pointer-events: none;
   z-index: 1;
   opacity: 0;
+  transition: opacity 0.3s;
 }
 
-.hover-shimmer:hover::before {
+.shimmer-on-hover:hover::before {
   opacity: 1;
-  animation: shimmer-wave 0.8s ease-out;
+  animation: shimmer-sweep 1s ease-in-out;
 }
 
-/* Light mode adjustments */
-[data-theme="light"] .scroll-shimmer::before {
+/* Border shimmer */
+.shimmer-border {
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 107, 0, 0.3) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 107, 0, 0.3) 100%
+  );
+  background-size: 200% 200%;
+  animation: shimmer-border 3s ease infinite;
+}
+
+/* Glow shimmer */
+.shimmer-glow {
+  position: relative;
+}
+
+.shimmer-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 107, 0, 0.2) 0%,
+    transparent 70%
+  );
+  animation: shimmer-glow 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Light mode shimmer adjustments */
+[data-theme="light"] .shimmer-overlay::before {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(0, 0, 0, 0.08) 20%,
-    rgba(0, 0, 0, 0.12) 50%,
-    rgba(0, 0, 0, 0.08) 80%,
+    rgba(0, 0, 0, 0.05) 50%,
     transparent 100%
   );
 }
 
-[data-theme="light"] .hover-shimmer::before {
+[data-theme="light"] .shimmer-on-hover::before {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.08) 50%,
     transparent 100%
   );
 }
-
-/* ========== END FACEBOOK-STYLE SCROLL SHIMMER ========== */
+/* ========== END NEW SHIMMER ANIMATIONS ========== */
 
     /* Loading overlay */
     .loading-overlay {
@@ -691,11 +733,11 @@ body {
 <body class="antialiased transition-colors duration-300" style="background-color: var(--bg-primary); color: var(--text-primary);">
 
   <!-- Loading Overlay -->
-<div id="pageLoader" class="loading-overlay">
+<div id="pageLoader" class="loading-overlay shimmer-overlay">
   <div class="flex flex-col items-center gap-4 relative z-10">
     <div class="loading-spinner"></div>
     <div class="text-center">
-      <p class="text-white/80 text-sm font-medium">Loading Deyoungprof Creative Hub</p>
+      <p class="text-white/80 text-sm font-medium shimmer-glow">Loading Deyoungprof Creative Hub</p>
        <p class="text-white/50 text-xs mt-1">Preparing your experience...</p>
     </div>
   </div>
@@ -771,7 +813,7 @@ body {
   </header>
 
   <!-- Hero -->
-<section id="home" class="relative pt-32 md:pt-36 lg:pt-40 overflow-hidden scroll-mt-24">
+<section id="home" class="relative pt-32 md:pt-36 lg:pt-40 overflow-hidden scroll-mt-24 shimmer-overlay-slow">
   <!-- Background gradient + shapes -->
   <div class="absolute inset-0 -z-10">
   <div class="absolute inset-0 bg-gradient-to-b from-[#0A0F1C] via-[#0B1224] to-[#0B0F19]"></div>
@@ -795,11 +837,11 @@ body {
           </p>
 
           <div class="mt-8 flex flex-col sm:flex-row gap-3">
-            <a href="#portfolio" class="hover-shimmer inline-flex items-center justify-center gap-2 rounded-md bg-white text-[#0A0F1C] px-5 py-3 text-sm font-medium hover:bg-white/90 transition-colors outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            <a href="#portfolio" class="shimmer-on-hover inline-flex items-center justify-center gap-2 rounded-md bg-white text-[#0A0F1C] px-5 py-3 text-sm font-medium hover:bg-white/90 transition-colors outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
               <i data-lucide="folder-open" class="h-5 w-5"></i>
               View Portfolio
             </a>
-            <a id="heroWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="hover-shimmer inline-flex items-center justify-center gap-2 rounded-md bg-[#25D366] px-5 py-3 text-sm text-white hover:bg-[#20bd5a] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]">
+            <a id="heroWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="shimmer-on-hover inline-flex items-center justify-center gap-2 rounded-md bg-[#25D366] px-5 py-3 text-sm text-white hover:bg-[#20bd5a] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]">
              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               Chat on WhatsApp
             </a>
@@ -828,7 +870,7 @@ body {
 
         <!-- Carousel -->
 <div class="relative h-full flex flex-col">
-  <div class="rounded-xl border border-white/10 bg-white/5 overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] flex-1 flex flex-col scroll-shimmer">
+  <div class="rounded-xl border border-white/10 bg-white/5 overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] flex-1 flex flex-col shimmer-overlay-slow">
             <div class="relative flex-1 flex flex-col">
   <div id="carousel" class="relative overflow-hidden flex-1">
                 <div class="whitespace-nowrap transition-transform duration-500 h-full" id="carouselTrack" style="transform: translateX(0%); font-size: 0;">
@@ -863,7 +905,7 @@ body {
   </section>
 
   <!-- Services -->
-  <section id="services" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24 scroll-shimmer">
+  <section id="services" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="flex items-end justify-between gap-4">
         <div>
@@ -905,7 +947,7 @@ body {
   </section>
 
 <!-- Client Reviews -->
-<section id="reviews" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24 scroll-shimmer">
+<section id="reviews" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="text-center max-w-3xl mx-auto mb-12">
       <h2 class="text-2xl sm:text-3xl tracking-tight font-semibold text-white mb-4" style="font-family: 'Nexa Bold','Poppins',sans-serif;">Client Reviews</h2>
@@ -955,7 +997,7 @@ body {
 </section>
 
   <!-- Portfolio -->
-  <section id="portfolio" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24 scroll-shimmer">
+  <section id="portfolio" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="flex items-end justify-between gap-4">
         <div>
@@ -1095,7 +1137,7 @@ body {
   </div>
 
   <!-- Our Creative Team -->
-<section id="about" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24 scroll-shimmer">
+<section id="about" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="text-center max-w-3xl mx-auto mb-12">
       <h2 class="text-2xl sm:text-3xl tracking-tight font-semibold text-white mb-4" style="font-family: 'Nexa Bold','Poppins',sans-serif;">Our Creative Team</h2>
@@ -1133,7 +1175,7 @@ body {
 </section>
 
   <!-- Contact -->
-  <section id="contact" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24 scroll-shimmer">
+  <section id="contact" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="grid lg:grid-cols-2 gap-10">
         <div>
@@ -1154,7 +1196,7 @@ body {
               <textarea id="message" name="message" rows="5" placeholder="Tell us about your project…" required class="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/40 outline-none focus:border-white/20 focus:ring-0"></textarea>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-              <button type="submit" class="hover-shimmer inline-flex items-center gap-2 rounded-md bg-white text-[#0A0F1C] px-4 py-2 text-sm hover:bg-white/90 transition-all">
+              <button type="submit" class="shimmer-on-hover inline-flex items-center gap-2 rounded-md bg-white text-[#0A0F1C] px-4 py-2 text-sm hover:bg-white/90 transition-all">
                 <i data-lucide="send" class="h-4 w-4"></i>
                 Send Message
               </button>
@@ -2992,34 +3034,6 @@ function showToast(message, type = 'info') {
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 5000);
 }
-// ========== SCROLL-TRIGGERED SHIMMER EFFECT ==========
-function initScrollShimmers() {
-  const shimmerElements = document.querySelectorAll('.scroll-shimmer');
-  
-  const observerOptions = {
-    threshold: 0.1, // Trigger when 10% visible
-    rootMargin: '0px 0px -50px 0px' // Trigger slightly before element enters view
-  };
-  
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        // Optional: Stop observing after first trigger
-        // observer.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-  
-  shimmerElements.forEach(el => observer.observe(el));
-  
-  console.log(`✨ Scroll shimmers initialized on ${shimmerElements.length} elements`);
-}
-
-// Initialize scroll shimmers after page loads
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(initScrollShimmers, 500); // Small delay to ensure elements are rendered
-});
   </script>
 </body>
 </html>
