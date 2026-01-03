@@ -65,7 +65,15 @@ body {
   }
   
   #site-header .flex.flex-col.leading-none {
-    display: none;
+    display: flex !important;
+  }
+  
+  #site-header .flex.flex-col.leading-none span {
+    font-size: 0.75rem;
+  }
+  
+  #site-header .flex.flex-col.leading-none span:first-child {
+    font-size: 0.875rem;
   }
   
   #headerLogo, #headerLogoFallback {
@@ -178,38 +186,69 @@ body {
 }
 
 @media (max-width: 640px) {
+  /* Carousel container - keep reasonable size */
   #carousel {
     aspect-ratio: 4/5;
     min-height: 400px;
   }
   
+  /* Carousel slides - maintain structure */
   #carouselTrack > div > div {
     display: flex !important;
     flex-direction: column !important;
     background: var(--bg-primary) !important;
+    height: 100%;
   }
   
+ /* Image should fit naturally without zooming */
   #carouselTrack img {
     position: relative !important;
-    object-fit: cover !important;
+    object-fit: contain !important;
     width: 100% !important;
-    height: auto !important;
-    flex: 1;
+    height: 100% !important;
   }
   
+  /* Text overlay stays at bottom - VISIBLE */
   #carouselTrack .absolute.bottom-0 {
-    position: relative !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
     padding: 1rem !important;
-    background: var(--bg-secondary) !important;
-    border-top: 1px solid var(--border-color);
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 70%, transparent 100%) !important;
+    z-index: 10 !important;
   }
   
+  /* Keep gradient overlay */
   #carouselTrack .bg-gradient-to-t {
-    display: none !important;
+    display: block !important;
   }
   
+  /* Hide hover effect on mobile */
   #carouselTrack .absolute.inset-0.flex {
     display: none !important;
+  }
+  
+  /* Make text visible and readable */
+  #carouselTrack .absolute.bottom-0 span,
+  #carouselTrack .absolute.bottom-0 p {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    color: white !important;
+    position: relative !important;
+    z-index: 11 !important;
+  }
+  
+  /* Badge spacing */
+  #carouselTrack .absolute.bottom-0 span.inline-flex {
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Text styling for mobile */
+  #carouselTrack .absolute.bottom-0 p {
+    font-size: 0.875rem;
+    line-height: 1.4;
   }
   
   #prevSlide, #nextSlide {
@@ -333,7 +372,37 @@ body {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
   }
-}  ← KEEP THIS CLOSING BRACE
+
+  /* Centralize hero content on mobile */
+  #home .grid {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  
+  #home .grid > div:first-child {
+    order: 1;
+    max-width: 100%;
+  }
+  
+  #home .grid > div:last-child {
+    order: 2;
+    width: 100%;
+  }
+  
+  /* Center hero buttons */
+  #home .flex.flex-col.sm\:flex-row {
+    justify-content: center !important;
+  }
+  
+  /* Center hero highlights */
+  #heroHighlights {
+    justify-content: center !important;
+  }
+
+  
+} ← CLOSING BRACE OF MEDIA QUERY
 
     .img-placeholder {
       background: linear-gradient(135deg, rgba(255,107,0,0.15) 0%, rgba(255,107,0,0.05) 100%);
@@ -474,9 +543,114 @@ body {
     }
 
     @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ========== FACEBOOK-STYLE SCROLL SHIMMER ========== */
+
+/* Shimmer wave animation - like Facebook loading */
+@keyframes shimmer-wave {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Scroll-triggered shimmer effect */
+.scroll-shimmer {
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.scroll-shimmer.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scroll-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.15) 80%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+}
+
+.scroll-shimmer.visible::before {
+  animation: shimmer-wave 1.5s ease-in-out;
+  animation-delay: 0.2s;
+}
+
+/* Hover shimmer - only on hover */
+.hover-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.hover-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+}
+
+.hover-shimmer:hover::before {
+  opacity: 1;
+  animation: shimmer-wave 0.8s ease-out;
+}
+
+/* Light mode adjustments */
+[data-theme="light"] .scroll-shimmer::before {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.08) 20%,
+    rgba(0, 0, 0, 0.12) 50%,
+    rgba(0, 0, 0, 0.08) 80%,
+    transparent 100%
+  );
+}
+
+[data-theme="light"] .hover-shimmer::before {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    transparent 100%
+  );
+}
+
+/* ========== END FACEBOOK-STYLE SCROLL SHIMMER ========== */
 
     /* Loading overlay */
     .loading-overlay {
@@ -517,15 +691,15 @@ body {
 <body class="antialiased transition-colors duration-300" style="background-color: var(--bg-primary); color: var(--text-primary);">
 
   <!-- Loading Overlay -->
-  <div id="pageLoader" class="loading-overlay">
-    <div class="flex flex-col items-center gap-4">
-      <div class="loading-spinner"></div>
-      <div class="text-center">
-        <p class="text-white/80 text-sm font-medium">Loading Deyoungprof Creative Hub</p>
-        <p class="text-white/50 text-xs mt-1">Preparing your experience...</p>
-      </div>
+<div id="pageLoader" class="loading-overlay">
+  <div class="flex flex-col items-center gap-4 relative z-10">
+    <div class="loading-spinner"></div>
+    <div class="text-center">
+      <p class="text-white/80 text-sm font-medium">Loading Deyoungprof Creative Hub</p>
+       <p class="text-white/50 text-xs mt-1">Preparing your experience...</p>
     </div>
   </div>
+</div>
 
   <!-- Sticky Header -->
   <header id="site-header" class="fixed top-0 inset-x-0 z-50 transition-all duration-300">
@@ -574,11 +748,9 @@ body {
   <i data-lucide="images" class="h-4 w-4"></i>
   <span>Portfolio</span>
 </a>
-          <a id="headerWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-3.5 py-2 text-sm text-white hover:bg-[#ff7b1b] outline-none ring-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF6B00] transition-colors">
-            <i data-lucide="message-circle" class="h-4 w-4"></i>
-            <span class="hidden sm:inline">Chat on WhatsApp</span>
-            <span class="sm:hidden">WhatsApp</span>
-          </a>
+          <a id="headerWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center justify-center rounded-md bg-[#25D366] p-2.5 text-white hover:bg-[#20bd5a] outline-none ring-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366] transition-colors" aria-label="Chat on WhatsApp">
+  <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
           <button class="md:hidden inline-flex items-center justify-center rounded-md border border-white/10 bg-white/0 p-2 text-white/70 hover:text-white hover:bg-white/5 hover:border-white/20" aria-label="Open Menu" id="mobileMenuBtn">
             <i data-lucide="menu" class="h-5 w-5"></i>
           </button>
@@ -609,7 +781,7 @@ body {
     </div>
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
-      <div class="grid lg:grid-cols-2 gap-10 items-stretch">
+      <div class="grid lg:grid-cols-2 gap-10 items-stretch flex-col lg:flex-row">
         <div>
           <p class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70">
   <span class="inline-flex h-1.5 w-1.5 rounded-full bg-[#FF6B00]"></span>
@@ -623,12 +795,12 @@ body {
           </p>
 
           <div class="mt-8 flex flex-col sm:flex-row gap-3">
-            <a href="#portfolio" class="inline-flex items-center justify-center gap-2 rounded-md bg-white text-[#0A0F1C] px-5 py-3 text-sm font-medium hover:bg-white/90 transition-colors outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            <a href="#portfolio" class="hover-shimmer inline-flex items-center justify-center gap-2 rounded-md bg-white text-[#0A0F1C] px-5 py-3 text-sm font-medium hover:bg-white/90 transition-colors outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
               <i data-lucide="folder-open" class="h-5 w-5"></i>
               View Portfolio
             </a>
-            <a id="heroWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-md bg-[#FF6B00] px-5 py-3 text-sm text-white hover:bg-[#ff7b1b] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF6B00]">
-              <i data-lucide="message-circle" class="h-5 w-5"></i>
+            <a id="heroWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="hover-shimmer inline-flex items-center justify-center gap-2 rounded-md bg-[#25D366] px-5 py-3 text-sm text-white hover:bg-[#20bd5a] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]">
+             <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               Chat on WhatsApp
             </a>
           </div>
@@ -656,7 +828,7 @@ body {
 
         <!-- Carousel -->
 <div class="relative h-full flex flex-col">
-  <div class="rounded-xl border border-white/10 bg-white/5 overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] flex-1 flex flex-col">
+  <div class="rounded-xl border border-white/10 bg-white/5 overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] flex-1 flex flex-col scroll-shimmer">
             <div class="relative flex-1 flex flex-col">
   <div id="carousel" class="relative overflow-hidden flex-1">
                 <div class="whitespace-nowrap transition-transform duration-500 h-full" id="carouselTrack" style="transform: translateX(0%); font-size: 0;">
@@ -691,14 +863,14 @@ body {
   </section>
 
   <!-- Services -->
-  <section id="services" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
+  <section id="services" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24 scroll-shimmer">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="flex items-end justify-between gap-4">
         <div>
           <h2 class="text-2xl sm:text-3xl tracking-tight font-semibold text-white" style="font-family: 'Nexa Bold','Poppins',sans-serif;">Services</h2>
           <p class="mt-2 text-sm text-white/60 max-w-2xl">Polished design solutions with transparent pricing.</p>
         </div>
-        <a id="servicesWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="hidden sm:inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-4 py-2 text-sm text-white hover:bg-[#ff7b1b]">
+        <a id="servicesWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="hidden sm:inline-flex items-center gap-2 rounded-md bg-[#25D366] px-4 py-2 text-sm text-white hover:bg-[#20bd5a]">
           <i data-lucide="shopping-bag" class="h-4 w-4"></i>
           Order via WhatsApp
         </a>
@@ -724,16 +896,16 @@ body {
       </div>
 
       <div class="mt-8 flex">
-        <a id="servicesWhatsApp2" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-5 py-3 text-sm text-white hover:bg-[#ff7b1b]">
-          <span>Order Your Design → WhatsApp</span>
-          <i data-lucide="arrow-right" class="h-4 w-4"></i>
-        </a>
+       <a id="servicesWhatsApp2" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#25D366] px-5 py-3 text-sm text-white hover:bg-[#20bd5a]">
+  <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  <span>Order Your Design</span>
+</a>
       </div>
     </div>
   </section>
 
 <!-- Client Reviews -->
-<section id="reviews" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
+<section id="reviews" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24 scroll-shimmer">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="text-center max-w-3xl mx-auto mb-12">
       <h2 class="text-2xl sm:text-3xl tracking-tight font-semibold text-white mb-4" style="font-family: 'Nexa Bold','Poppins',sans-serif;">Client Reviews</h2>
@@ -783,7 +955,7 @@ body {
 </section>
 
   <!-- Portfolio -->
-  <section id="portfolio" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
+  <section id="portfolio" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24 scroll-shimmer">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="flex items-end justify-between gap-4">
         <div>
@@ -872,8 +1044,8 @@ body {
         </div>
         
         <div class="max-w-4xl mx-auto mt-4 flex justify-center">
-          <a id="galleryWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-5 py-3 text-sm text-white hover:bg-[#ff7b1b]">
-            <i data-lucide="message-circle" class="h-4 w-4"></i>
+          <a id="galleryWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#25D366] px-5 py-3 text-sm text-white hover:bg-[#20bd5a]">
+            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             Send us a DM
           </a>
         </div>
@@ -912,10 +1084,10 @@ body {
                 <p id="lightboxPrice" class="text-xs text-white/80"></p>
               </div>
             </div>
-            <a id="lightboxWhatsApp" href="#" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-4 py-2 text-sm text-white hover:bg-[#ff7b1b]">
-              <i data-lucide="message-circle" class="h-4 w-4"></i>
-              Order Your Design Today
-            </a>
+            <a id="lightboxWhatsApp" href="#" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#25D366] px-4 py-2 text-sm text-white hover:bg-[#20bd5a]">
+  <i data-lucide="shopping-bag" class="h-4 w-4"></i>
+  Order Now
+</a>
           </div>
         </div>
       </div>
@@ -923,7 +1095,7 @@ body {
   </div>
 
   <!-- Our Creative Team -->
-<section id="about" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
+<section id="about" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24 scroll-shimmer">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="text-center max-w-3xl mx-auto mb-12">
       <h2 class="text-2xl sm:text-3xl tracking-tight font-semibold text-white mb-4" style="font-family: 'Nexa Bold','Poppins',sans-serif;">Our Creative Team</h2>
@@ -961,7 +1133,7 @@ body {
 </section>
 
   <!-- Contact -->
-  <section id="contact" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24">
+  <section id="contact" class="relative py-16 sm:py-20 border-t border-white/10 scroll-mt-24 scroll-shimmer">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="grid lg:grid-cols-2 gap-10">
         <div>
@@ -982,13 +1154,13 @@ body {
               <textarea id="message" name="message" rows="5" placeholder="Tell us about your project…" required class="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/40 outline-none focus:border-white/20 focus:ring-0"></textarea>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-              <button type="submit" class="inline-flex items-center gap-2 rounded-md bg-white text-[#0A0F1C] px-4 py-2 text-sm hover:bg-white/90">
+              <button type="submit" class="hover-shimmer inline-flex items-center gap-2 rounded-md bg-white text-[#0A0F1C] px-4 py-2 text-sm hover:bg-white/90 transition-all">
                 <i data-lucide="send" class="h-4 w-4"></i>
                 Send Message
               </button>
               <a id="contactWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm text-white" style="background-color:#25D366;">
-                <i data-lucide="message-circle" class="h-4 w-4"></i>
-                Start a Project on WhatsApp
+               <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  Start a Project on WhatsApp
               </a>
             </div>
           </form>
@@ -1022,8 +1194,8 @@ body {
                   <i data-lucide="map" class="h-4 w-4 text-[#FF6B00]"></i>
                   Agbara, Badagry
                 </div>
-                <a id="contactMapWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-3 py-2 text-xs text-white hover:bg-[#ff7b1b]">
-                  <i data-lucide="message-circle" class="h-4 w-4"></i>
+                <a id="contactMapWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#25D366] px-3 py-2 text-xs text-white hover:bg-[#20bd5a]">
+                  <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                   WhatsApp Now
                 </a>
               </div>
@@ -1042,14 +1214,14 @@ body {
       <div class="flex items-center justify-between px-4 sm:px-6 py-4 bg-black/70 backdrop-blur-xl">
         <div class="flex items-center gap-3">
           <i data-lucide="shield-check" class="h-5 w-5 text-[#FF6B00]"></i>
-          <h3 id="reviewImageTitle" class="text-base font-semibold text-white">Client Testimonial</h3>
+          <h3 id="reviewImageTitle" class="text-base font-semibold text-white">Client Evidence</h3>
         </div>
         <button onclick="closeReviewImageLightbox()" class="inline-flex items-center justify-center rounded-md border border-white/10 bg-white/0 p-2 text-white/80 hover:text-white hover:bg-white/10">
           <i data-lucide="x" class="h-5 w-5"></i>
         </button>
       </div>
       <div class="flex-1 flex items-center justify-center p-4 overflow-hidden">
-        <img id="reviewImageSrc" src="" alt="Review Testimonial" class="max-w-full max-h-full object-contain">
+        <img id="reviewImageSrc" src="" alt="Review evidence" class="max-w-full max-h-full object-contain">
       </div>
     </div>
   </div>
@@ -1066,8 +1238,8 @@ body {
           <span class="text-sm text-white/70">Deyoungprof Creative Hub</span>
         </div>
         <div class="flex items-center gap-3">
-          <a id="footerWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-4 py-2 text-sm text-white hover:bg-[#ff7b1b]">
-            <i data-lucide="message-circle" class="h-4 w-4"></i>
+          <a id="footerWhatsApp" href="https://wa.me/2348147732687" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#25D366] px-4 py-2 text-sm text-white hover:bg-[#20bd5a]">
+            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             WhatsApp
           </a>
           <a id="footerInstagram" href="#" class="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/0 px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 hover:border-white/20">
@@ -1107,6 +1279,186 @@ import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy, where }
     let currentGallery = [];
     let currentGalleryIndex = 0;
     let siteSettings = {};
+
+// Cache management constants
+const CACHE_VERSION = '1.0.0';
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+const CACHE_KEYS = {
+  CAROUSEL: 'deyoungprof_cache_carousel',
+  PORTFOLIO: 'deyoungprof_cache_portfolio',
+  SERVICES: 'deyoungprof_cache_services',
+  SETTINGS: 'deyoungprof_cache_settings',
+  HIGHLIGHTS: 'deyoungprof_cache_highlights',
+  REVIEWS: 'deyoungprof_cache_reviews',
+  TEAM: 'deyoungprof_cache_team',
+  TIMESTAMP: 'deyoungprof_cache_timestamp'
+};
+
+// Fallback state tracker
+let usingFallback = false;
+let firebaseAvailable = true;
+let fallbackDataLoaded = false;
+let autoRetryInterval = null;
+
+// ========== CACHE & FALLBACK FUNCTIONS ==========
+
+// Save data to localStorage cache
+function cacheData(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(CACHE_KEYS.TIMESTAMP, Date.now().toString());
+    console.log(`✅ Cached: ${key}`);
+  } catch (error) {
+    console.warn('Cache save failed:', error);
+  }
+}
+
+// Get data from localStorage cache
+function getCachedData(key) {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.warn('Cache read failed:', error);
+    return null;
+  }
+}
+
+// Check if cache is still valid (within 7 days)
+function isCacheValid() {
+  try {
+    const timestamp = localStorage.getItem(CACHE_KEYS.TIMESTAMP);
+    if (!timestamp) return false;
+    
+    const age = Date.now() - parseInt(timestamp);
+    const isValid = age < CACHE_DURATION;
+    
+    if (!isValid) {
+      console.log('⚠️ Cache expired (older than 7 days)');
+    }
+    
+    return isValid;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Clear all cache
+function clearCache() {
+  Object.values(CACHE_KEYS).forEach(key => {
+    localStorage.removeItem(key);
+  });
+  console.log('🗑️ Cache cleared');
+}
+
+// Load fallback data from fallback-data.json
+async function loadFallbackData() {
+  if (fallbackDataLoaded) return true;
+  
+  try {
+    console.log('📥 Loading fallback-data.json...');
+    const response = await fetch('./fallback-data.json');
+    
+    if (!response.ok) {
+      throw new Error('Fallback file not found');
+    }
+    
+    const fallbackData = await response.json();
+    console.log('✅ Fallback data loaded:', fallbackData);
+    
+    // Store in variables
+    carouselSlides = fallbackData.carouselSlides || [];
+    portfolioData = {};
+    
+    // Build portfolio data structure
+    (fallbackData.portfolioItems || []).forEach(item => {
+      if (!portfolioData[item.category]) {
+        portfolioData[item.category] = {
+          display: item.categoryDisplay,
+          items: []
+        };
+      }
+      portfolioData[item.category].items.push(item);
+    });
+    
+    siteSettings = fallbackData.siteSettings || {};
+    
+    // Cache the fallback data
+    cacheData(CACHE_KEYS.CAROUSEL, carouselSlides);
+    cacheData(CACHE_KEYS.PORTFOLIO, portfolioData);
+    cacheData(CACHE_KEYS.SERVICES, fallbackData.services || []);
+    cacheData(CACHE_KEYS.SETTINGS, siteSettings);
+    cacheData(CACHE_KEYS.HIGHLIGHTS, fallbackData.heroHighlights || []);
+    cacheData(CACHE_KEYS.REVIEWS, fallbackData.reviews || []);
+    cacheData(CACHE_KEYS.TEAM, fallbackData.teamMembers || []);
+    
+    fallbackDataLoaded = true;
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to load fallback data:', error);
+    return false;
+  }
+}
+
+// Show fallback indicator to user
+function showFallbackIndicator() {
+  const indicator = document.createElement('div');
+  indicator.id = 'fallbackIndicator';
+  indicator.className = 'fixed top-20 right-4 z-[90] rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-4 py-3 shadow-lg backdrop-blur-sm';
+  indicator.innerHTML = `
+    <div class="flex items-center gap-3">
+      <i data-lucide="database" class="h-5 w-5 text-yellow-400 flex-shrink-0"></i>
+      <div class="text-sm">
+        <p class="text-yellow-400 font-medium">Using Cached Data</p>
+        <p class="text-white/60 text-xs mt-0.5">Firebase temporarily unavailable</p>
+      </div>
+      <button onclick="document.getElementById('fallbackIndicator').remove()" class="text-white/40 hover:text-white">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+  `;
+  document.body.appendChild(indicator);
+  if (window.lucide) window.lucide.createIcons();
+  
+  // Auto-hide after 10 seconds
+  setTimeout(() => {
+    indicator?.remove();
+  }, 10000);
+}
+
+// Start auto-retry to reconnect to Firebase
+function startAutoRetry() {
+  if (autoRetryInterval) return; // Already running
+  
+  console.log('🔄 Starting auto-retry (every 5 minutes)...');
+  
+  autoRetryInterval = setInterval(async () => {
+    console.log('🔄 Attempting to reconnect to Firebase...');
+    
+    try {
+      // Try a simple Firebase operation
+      const testDoc = await getDoc(doc(db, 'siteSettings', 'main'));
+      
+      if (testDoc.exists()) {
+        console.log('✅ Firebase reconnected! Reloading data...');
+        clearInterval(autoRetryInterval);
+        autoRetryInterval = null;
+        firebaseAvailable = true;
+        usingFallback = false;
+        
+        // Remove fallback indicator
+        document.getElementById('fallbackIndicator')?.remove();
+        
+        // Reload fresh data
+        await loadSiteData();
+        
+        showToast('Reconnected to Firebase! Data refreshed.', 'success');
+      }
+    } catch (error) {
+      console.log('⚠️ Still offline, will retry...');
+    }
+  }, 5 * 60 * 1000); // Every 5 minutes
+}
 
     // Initialize
     document.addEventListener('DOMContentLoaded', async () => {
@@ -1149,27 +1501,316 @@ initializeTheme();
     });
 
     async function loadSiteData() {
-      try {
-        await Promise.all([
-  loadSettings(),
-  loadCarousel(),
-  loadServices(),
-  loadReviews(),
-  loadPortfolio(),
-  loadHeroHighlights(),
-  loadTeamMembers()
-]);
-        console.log('✅ All site data loaded successfully');
-      } catch (error) {
-        console.error('❌ Error loading site data:', error);
-        // Show user-friendly message
-        const sections = ['servicesList', 'portfolioCategories'];
-        sections.forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.innerHTML = '<p class="text-white/60">Unable to load content. Please refresh the page.</p>';
-        });
-      }
+  try {
+    // Try Firebase first with timeout
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Firebase timeout')), 10000)
+    );
+    
+    const loadPromise = Promise.all([
+      loadSettings(),
+      loadCarousel(),
+      loadServices(),
+      loadReviews(),
+      loadPortfolio(),
+      loadHeroHighlights(),
+      loadTeamMembers()
+    ]);
+    
+    await Promise.race([loadPromise, timeoutPromise]);
+    
+    firebaseAvailable = true;
+    console.log('✅ All site data loaded successfully from Firebase');
+    
+  } catch (error) {
+    console.error('❌ Firebase load failed:', error);
+    console.error('Error details:', error.message); // ✅ NEW: More detailed error logging
+    firebaseAvailable = false;
+    
+    // Try cache first
+    if (isCacheValid()) {
+      console.log('📦 Using cached data...');
+      await loadFromCache();
+      usingFallback = true;
+      showFallbackIndicator();
+      startAutoRetry();
+      return;
     }
+    
+    // Try fallback-data.json
+    console.log('📥 Attempting to load fallback-data.json...');
+    const fallbackLoaded = await loadFallbackData();
+    
+    if (fallbackLoaded) {
+      console.log('✅ Using fallback data');
+      usingFallback = true;
+      
+      // Render everything with fallback data
+      await Promise.all([
+        renderSettingsFromFallback(),
+        renderCarousel(),
+        renderServicesFromFallback(),
+        renderReviewsFromFallback(),
+        renderPortfolioCategories(),
+        renderHeroHighlightsFromFallback(),
+        renderTeamMembersFromFallback()
+      ]);
+      
+      showFallbackIndicator();
+      startAutoRetry();
+    } else {
+      // Ultimate failure - show error
+      console.error('❌ All fallback methods failed');
+      showToast('Unable to load content. Please check your connection.', 'error');
+      
+      const sections = ['servicesList', 'portfolioCategories', 'heroHighlights', 'reviewsList', 'teamMembersGrid'];
+      sections.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<p class="text-white/60">Unable to load content. Please refresh the page.</p>';
+      });
+    }
+  }
+}
+
+// Load data from localStorage cache
+async function loadFromCache() {
+  console.log('📦 Loading from cache...');
+  
+  carouselSlides = getCachedData(CACHE_KEYS.CAROUSEL) || [];
+  portfolioData = getCachedData(CACHE_KEYS.PORTFOLIO) || {};
+  siteSettings = getCachedData(CACHE_KEYS.SETTINGS) || {};
+  
+  console.log(`📦 Cache loaded: ${carouselSlides.length} carousel slides, ${Object.keys(portfolioData).length} portfolio categories`);
+  
+  // Render from cache
+  await Promise.all([
+    renderSettingsFromCache(),
+    renderCarousel(),
+    renderServicesFromCache(),
+    renderReviewsFromCache(),
+    renderPortfolioCategories(),
+    renderHeroHighlightsFromCache(),
+    renderTeamMembersFromCache()
+  ]);
+  
+  console.log('✅ All content rendered from cache successfully');
+}
+
+// Render functions for fallback/cached data
+async function renderSettingsFromFallback() {
+  if (!siteSettings.contact) return;
+  
+  // Update WhatsApp links
+  const phone = siteSettings.contact.phone || '2348147732687';
+  const whatsappUrl = `https://wa.me/${phone}`;
+  document.querySelectorAll('#headerWhatsApp, #heroWhatsApp, #servicesWhatsApp, #servicesWhatsApp2, #contactWhatsApp, #contactMapWhatsApp, #footerWhatsApp, #galleryWhatsApp').forEach(el => {
+    if (el) el.href = whatsappUrl;
+  });
+
+  // Update contact info
+  const emailEl = document.getElementById('contactEmail');
+  const addressEl = document.getElementById('contactAddress');
+  if (emailEl) emailEl.textContent = siteSettings.contact.email || 'stephen@bi-okoto.com';
+  if (addressEl) addressEl.textContent = siteSettings.contact.address || '4, Mbere Close, Morogbo Bus Stop, Agbara, Badagry, Lagos';
+
+  // Update logo if available
+  if (siteSettings.logos?.main) {
+    const headerLogo = document.getElementById('headerLogo');
+    const footerLogo = document.getElementById('footerLogo');
+    if (headerLogo) {
+      headerLogo.src = siteSettings.logos.main;
+      headerLogo.classList.remove('hidden');
+    }
+    if (footerLogo) {
+      footerLogo.src = siteSettings.logos.main;
+      footerLogo.classList.remove('hidden');
+    }
+  }
+}
+
+async function renderSettingsFromCache() {
+  await renderSettingsFromFallback();
+}
+
+async function renderServicesFromFallback() {
+  const services = getCachedData(CACHE_KEYS.SERVICES) || [];
+  const listEl = document.getElementById('servicesList');
+  if (!listEl) return;
+  
+  if (services.length === 0) {
+    listEl.innerHTML = '<p class="text-white/60 col-span-full">No services available.</p>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  services.forEach(data => {
+    const article = document.createElement('article');
+    article.className = 'shimmer-on-hover group rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300';
+    article.innerHTML = `
+      <div class="grid sm:grid-cols-[120px_1fr] gap-4 p-5">
+        <div class="aspect-square rounded-lg overflow-hidden bg-black/20 border border-white/10">
+          <img src="${data.thumbnailUrl || ''}" alt="${data.name}" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="${data.icon}" class="h-5 w-5 text-[#FF6B00] flex-shrink-0"></i>
+              <h3 class="text-base font-semibold text-white group-hover:text-[#FF6B00] transition-colors">${data.name}</h3>
+            </div>
+            <span class="text-sm text-white/80 font-medium whitespace-nowrap">${data.price}</span>
+          </div>
+          <p class="text-sm text-white/60 mb-4 flex-1">${data.description}</p>
+          <div class="flex flex-wrap gap-2">
+            <a href="https://wa.me/${siteSettings.contact?.phone || '2348147732687'}?text=${encodeURIComponent('Hello, I\'m interested in: ' + data.name + ' (' + data.price + ')')}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-3 py-2 text-xs text-white hover:bg-[#ff7b1b] transition-colors">
+              <i data-lucide="message-circle" class="h-3 w-3"></i>
+              Order Now
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+    listEl.appendChild(article);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+async function renderServicesFromCache() {
+  await renderServicesFromFallback();
+}
+
+async function renderReviewsFromFallback() {
+  const reviews = getCachedData(CACHE_KEYS.REVIEWS) || [];
+  const container = document.getElementById('reviewsList');
+  if (!container) return;
+  
+  if (reviews.length === 0) {
+    container.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-white/40 text-sm">No reviews yet.</p></div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  reviews.forEach(data => {
+    const card = document.createElement('div');
+    card.className = 'shimmer-on-hover rounded-xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300';
+    
+    const stars = Array(5).fill(0).map((_, i) => 
+      `<i data-lucide="star" class="h-4 w-4 ${i < data.rating ? 'fill-[#FF6B00] text-[#FF6B00]' : 'text-white/20'}"></i>`
+    ).join('');
+    
+    card.innerHTML = `
+      <div class="flex items-center gap-3 mb-4">
+        <div class="h-12 w-12 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-white/5 flex items-center justify-center text-white font-semibold">
+          ${data.clientName.charAt(0)}
+        </div>
+        <div class="flex-1">
+          <h3 class="text-base font-semibold text-white">${data.clientName}</h3>
+          <p class="text-xs text-white/60">${data.projectType || 'Client'}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 mb-3">${stars}</div>
+      <p class="text-sm text-white/70 leading-relaxed mb-3">${data.review}</p>
+      ${data.imageUrl ? `
+        <div class="mt-3 rounded-lg border border-white/10 overflow-hidden">
+          <img src="${data.imageUrl}" alt="Review evidence" class="w-full h-32 object-cover" loading="lazy" onerror="this.parentElement.style.display='none'">
+        </div>
+      ` : ''}
+    `;
+    container.appendChild(card);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+async function renderReviewsFromCache() {
+  await renderReviewsFromFallback();
+}
+
+async function renderHeroHighlightsFromFallback() {
+  const highlights = getCachedData(CACHE_KEYS.HIGHLIGHTS) || [];
+  const container = document.getElementById('heroHighlights');
+  if (!container) return;
+  
+  if (highlights.length === 0) {
+    container.innerHTML = '<div class="col-span-full text-center py-8"><p class="text-white/40 text-sm">No highlights configured yet.</p></div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  highlights.forEach(data => {
+    const card = document.createElement('div');
+    card.className = 'rounded-lg border border-white/10 bg-white/5 p-5 hover:bg-white/10 hover:border-white/20 transition-colors';
+    card.innerHTML = `
+      <div class="flex items-center gap-3">
+        <i data-lucide="${data.icon}" class="h-6 w-6 text-[#FF6B00]"></i>
+        <h3 class="text-base font-medium text-white" style="font-family: 'Nexa Bold','Poppins',sans-serif;">${data.title}</h3>
+      </div>
+      <p class="mt-2 text-sm text-white/60">${data.description}</p>
+    `;
+    container.appendChild(card);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+async function renderHeroHighlightsFromCache() {
+  await renderHeroHighlightsFromFallback();
+}
+
+async function renderTeamMembersFromFallback() {
+  const team = getCachedData(CACHE_KEYS.TEAM) || [];
+  const container = document.getElementById('teamMembersGrid');
+  if (!container) return;
+  
+  if (team.length === 0) {
+    container.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-white/40 text-sm">Our team section is coming soon.</p></div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  team.forEach(data => {
+    const card = document.createElement('div');
+    
+    if (data.isCEO) {
+      card.className = 'rounded-xl border-2 border-[#FF6B00]/30 bg-gradient-to-br from-[#FF6B00]/5 to-white/5 overflow-hidden lg:col-span-2 hover:border-[#FF6B00]/50 transition-all duration-300';
+      card.innerHTML = `
+        <div class="grid lg:grid-cols-2 gap-0">
+          <div class="aspect-[4/3] lg:aspect-auto bg-black/20 relative">
+            <img src="${data.imageUrl}" alt="${data.name}" class="h-full w-full object-cover" onerror="this.style.display='none'">
+            <div class="absolute top-3 right-3 bg-[#FF6B00] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
+              <i data-lucide="crown" class="h-3 w-3 inline mr-1"></i>Founder & CEO
+            </div>
+          </div>
+          <div class="p-6 lg:p-8 flex flex-col justify-center">
+            <h3 class="text-xl font-semibold text-white mb-2">${data.name}</h3>
+            <p class="text-[#FF6B00] text-sm font-medium mb-4">${data.role}</p>
+            <p class="text-sm text-white/70 leading-relaxed">${data.bio}</p>
+          </div>
+        </div>
+      `;
+    } else {
+      card.className = 'rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300';
+      card.innerHTML = `
+        <div class="aspect-[4/3] bg-black/20 relative overflow-hidden">
+          <img src="${data.imageUrl}" alt="${data.name}" class="h-full w-full object-cover" onerror="this.style.display='none'">
+        </div>
+        <div class="p-5">
+          <h3 class="text-base font-semibold text-white mb-1">${data.name}</h3>
+          <p class="text-[#FF6B00] text-sm font-medium mb-3">${data.role}</p>
+          <p class="text-xs text-white/60 leading-relaxed">${data.bio}</p>
+        </div>
+      `;
+    }
+    container.appendChild(card);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+async function renderTeamMembersFromCache() {
+  await renderTeamMembersFromFallback();
+}
+
     // Load settings
     async function loadSettings() {
       try {
@@ -1247,56 +1888,67 @@ if (siteSettings.contact?.locationText) {
   });
 }
         }
+        // Cache settings
+        cacheData(CACHE_KEYS.SETTINGS, siteSettings);
       } catch (error) {
         console.error('Settings error:', error);
       }
     }
 
     // Load hero highlights
-    async function loadHeroHighlights() {
-      try {
-        const q = query(collection(db, 'heroHighlights'), where('active', '==', true), orderBy('order'));
-        const snapshot = await getDocs(q);
-        
-        const container = document.getElementById('heroHighlights');
-        
-        if (snapshot.empty) {
-          // Show default/placeholder if no highlights exist
-          container.innerHTML = `
-            <div class="col-span-full text-center py-8">
-              <p class="text-white/40 text-sm">No highlights configured yet.</p>
-            </div>
-          `;
-          return;
-        }
-
-        container.innerHTML = '';
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const card = document.createElement('div');
-          card.className = 'rounded-lg border border-white/10 bg-white/5 p-5 hover:bg-white/10 hover:border-white/20 transition-colors';
-          card.innerHTML = `
-            <div class="flex items-center gap-3">
-              <i data-lucide="${data.icon}" class="h-6 w-6 text-[#FF6B00]"></i>
-              <h3 class="text-base font-medium text-white" style="font-family: 'Nexa Bold','Poppins',sans-serif;">${data.title}</h3>
-            </div>
-            <p class="mt-2 text-sm text-white/60">${data.description}</p>
-          `;
-          container.appendChild(card);
-        });
-
-        if (window.lucide) window.lucide.createIcons();
-      } catch (error) {
-        console.error('Hero highlights error:', error);
-        // Show fallback on error
-        const container = document.getElementById('heroHighlights');
-        container.innerHTML = `
-          <div class="col-span-full text-center py-8">
-            <p class="text-white/40 text-sm">Unable to load highlights.</p>
-          </div>
-        `;
-      }
+async function loadHeroHighlights() {
+  try {
+    const highlightsArray = []; // ✅ FIXED: Declare array at the start
+    const q = query(collection(db, 'heroHighlights'), where('active', '==', true), orderBy('order'));
+    const snapshot = await getDocs(q);
+    
+    const container = document.getElementById('heroHighlights');
+    
+    if (snapshot.empty) {
+      console.log('⚠️ No highlights found in Firebase');
+      container.innerHTML = `
+        <div class="col-span-full text-center py-8">
+          <p class="text-white/40 text-sm">No highlights configured yet.</p>
+        </div>
+      `;
+      return;
     }
+
+    container.innerHTML = '';
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      highlightsArray.push(data); // ✅ FIXED: Push to array inside loop
+      
+      const card = document.createElement('div');
+      card.className = 'rounded-lg border border-white/10 bg-white/5 p-5 hover:bg-white/10 hover:border-white/20 transition-colors';
+      card.innerHTML = `
+        <div class="flex items-center gap-3">
+          <i data-lucide="${data.icon}" class="h-6 w-6 text-[#FF6B00]"></i>
+          <h3 class="text-base font-medium text-white" style="font-family: 'Nexa Bold','Poppins',sans-serif;">${data.title}</h3>
+        </div>
+        <p class="mt-2 text-sm text-white/60">${data.description}</p>
+      `;
+      container.appendChild(card);
+    });
+
+    // Cache highlights
+    cacheData(CACHE_KEYS.HIGHLIGHTS, highlightsArray);
+    console.log(`✅ Loaded ${highlightsArray.length} highlights from Firebase`);
+    
+    if (window.lucide) window.lucide.createIcons();
+  } catch (error) {
+    console.error('❌ Hero highlights error:', error);
+    const container = document.getElementById('heroHighlights');
+    if (container) {
+      container.innerHTML = `
+        <div class="col-span-full text-center py-8">
+          <p class="text-white/40 text-sm">Unable to load highlights. Please refresh.</p>
+        </div>
+      `;
+    }
+  }
+}
+
 
 // Load team members
 async function loadTeamMembers() {
@@ -1352,7 +2004,7 @@ async function loadTeamMembers() {
         `;
       } else {
         // Regular team member card
-        card.className = 'rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300 group';
+        card.className = 'shimmer-on-hover rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300 group';
         card.innerHTML = `
           <div class="aspect-[4/3] bg-black/20 relative overflow-hidden">
             <img src="${data.imageUrl}" alt="${data.name}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
@@ -1387,8 +2039,13 @@ async function loadTeamMembers() {
       `;
       container.appendChild(joinCard);
     }
-
-    if (window.lucide) window.lucide.createIcons();
+    
+  if (window.lucide) window.lucide.createIcons();
+    
+    // Cache team members
+    const teamArray = [];
+    snapshot.forEach(doc => teamArray.push(doc.data()));
+    cacheData(CACHE_KEYS.TEAM, teamArray);
     
   } catch (error) {
     console.error('Team members load error:', error);
@@ -1415,21 +2072,24 @@ async function loadTeamMembers() {
         if (carouselSlides.length > 0) {
           renderCarousel();
         }
+        
+        // Cache carousel
+        cacheData(CACHE_KEYS.CAROUSEL, carouselSlides);
       } catch (error) {
         console.error('Carousel error:', error);
       }
     }
 
-    function renderCarousel() {
+   function renderCarousel() {
       const track = document.getElementById('carouselTrack');
       track.innerHTML = carouselSlides.map((slide, index) => `
         <div class="inline-block align-top w-full h-full">
-  <div class="h-full relative cursor-pointer group flex flex-col" data-carousel-index="${index}" style="background: var(--bg-primary);">
-  <div class="flex-1 relative overflow-hidden">
-    <img src="${slide.imageUrl}" alt="${slide.title}" loading="lazy" class="w-full h-full object-cover">
-  </div>
-  <div class="absolute inset-0 bg-gradient-to-t from-[#0A0F1C]/80 via-transparent to-transparent pointer-events-none"></div>
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <div class="h-full relative cursor-pointer group flex flex-col carousel-slide-clickable" data-carousel-index="${index}" style="background: var(--bg-primary);">
+            <div class="flex-1 relative overflow-hidden">
+              <img src="${slide.imageUrl}" alt="${slide.title}" loading="lazy" class="w-full h-full object-cover">
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0A0F1C]/80 via-transparent to-transparent pointer-events-none"></div>
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <div class="rounded-full bg-white/20 backdrop-blur-sm p-4 border border-white/30">
                 <i data-lucide="maximize-2" class="h-6 w-6 text-white"></i>
               </div>
@@ -1482,26 +2142,29 @@ async function loadTeamMembers() {
       });
 
       // Add click listeners to carousel slides for lightbox
-      document.querySelectorAll('[data-carousel-index]').forEach(slideEl => {
-        slideEl.addEventListener('click', (e) => {
-          // Don't open lightbox if clicking navigation buttons
-          if (e.target.closest('#prevSlide') || e.target.closest('#nextSlide') || e.target.closest('[data-dot]')) {
-            return;
-          }
-          
-          const slideIndex = parseInt(slideEl.dataset.carouselIndex);
-          const slide = carouselSlides[slideIndex];
-          if (slide) {
-            openImageLightbox(
-              slide.imageUrl,
-              slide.title,
-              'Carousel Slide',
-              '',
-              slide
-            );
-          }
+      setTimeout(() => {
+        document.querySelectorAll('.carousel-slide-clickable').forEach(slideEl => {
+          slideEl.addEventListener('click', (e) => {
+            // Don't open lightbox if clicking navigation buttons
+            if (e.target.closest('#prevSlide') || e.target.closest('#nextSlide') || e.target.closest('[data-dot]')) {
+              return;
+            }
+            
+            const slideIndex = parseInt(slideEl.dataset.carouselIndex);
+            const slide = carouselSlides[slideIndex];
+            if (slide) {
+              openImageLightbox(
+                slide.imageUrl,
+                slide.title,
+                'Carousel Slide',
+                slide.description || '',
+                slide
+              );
+            }
+          });
         });
-      });
+        console.log('✅ Carousel click listeners attached');
+      }, 100);
 
       // Auto-rotate
       setInterval(() => goToSlide(carouselIndex + 1), 6000);
@@ -1525,8 +2188,10 @@ async function loadTeamMembers() {
     }
 
     // Load services
-    async function loadServices() {
+    // Load services
+async function loadServices() {
   try {
+    const servicesArray = [];
     const q = query(collection(db, 'services'), where('active', '==', true), orderBy('order'));
     const snapshot = await getDocs(q);
     
@@ -1539,6 +2204,8 @@ async function loadTeamMembers() {
     listEl.innerHTML = '';
     snapshot.forEach(doc => {
       const data = doc.data();
+      servicesArray.push(data); // ✅ FIXED: Moved here, inside the loop where 'data' is defined
+      
       const article = document.createElement('article');
       article.className = 'group rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300';
       article.innerHTML = `
@@ -1571,7 +2238,7 @@ async function loadTeamMembers() {
       listEl.appendChild(article);
     });
 
-    // Add click listeners for "View Samples" buttons
+    // ✅ FIXED: Only one forEach for click listeners now
     document.querySelectorAll('.service-view-samples').forEach(btn => {
       btn.addEventListener('click', () => {
         const category = btn.dataset.category;
@@ -1583,15 +2250,24 @@ async function loadTeamMembers() {
       });
     });
 
+    // Cache services
+    cacheData(CACHE_KEYS.SERVICES, servicesArray);
+    
     if (window.lucide) window.lucide.createIcons();
   } catch (error) {
     console.error('Services error:', error);
+    // ✅ NEW: Show error state to user
+    const listEl = document.getElementById('servicesList');
+    if (listEl) {
+      listEl.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-white/40 text-sm">Unable to load services. Please refresh the page.</p></div>';
+    }
   }
 }
 
 // Load client reviews
 async function loadReviews() {
   try {
+    const reviewsArray = [];
     const q = query(collection(db, 'reviews'), where('active', '==', true), orderBy('order'));
     const snapshot = await getDocs(q);
     
@@ -1609,6 +2285,8 @@ async function loadReviews() {
     container.innerHTML = '';
     snapshot.forEach(doc => {
       const data = doc.data();
+      reviewsArray.push(data); // ✅ FIXED: Moved here, inside the loop
+      
       const card = document.createElement('div');
       card.className = 'rounded-xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300';
       
@@ -1633,26 +2311,32 @@ async function loadReviews() {
         <p class="text-sm text-white/70 leading-relaxed mb-3">${data.review}</p>
         ${data.imageUrl ? `
           <div class="mt-3 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-[#FF6B00]/50 transition-colors group" onclick="openReviewImage('${data.imageUrl}', '${data.clientName}')">
-            <img src="${data.imageUrl}" alt="Review Testimonial from ${data.clientName}" class="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+            <img src="${data.imageUrl}" alt="Review evidence from ${data.clientName}" class="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
             <div class="bg-white/5 px-3 py-2 flex items-center gap-2">
               <i data-lucide="image" class="h-3 w-3 text-[#FF6B00]"></i>
-              <span class="text-xs text-white/60">Click to view</span>
+              <span class="text-xs text-white/60">Click to view evidence</span>
             </div>
           </div>
         ` : ''}
       `;
+
       container.appendChild(card);
     });
+    
+    // Cache reviews
+    cacheData(CACHE_KEYS.REVIEWS, reviewsArray);
 
     if (window.lucide) window.lucide.createIcons();
   } catch (error) {
     console.error('Reviews error:', error);
     const container = document.getElementById('reviewsList');
-    container.innerHTML = `
-      <div class="col-span-full text-center py-12">
-        <p class="text-white/40 text-sm">Unable to load reviews.</p>
-      </div>
-    `;
+    if (container) {
+      container.innerHTML = `
+        <div class="col-span-full text-center py-12">
+          <p class="text-white/40 text-sm">Unable to load reviews. Please refresh the page.</p>
+        </div>
+      `;
+    }
   }
 }
 
@@ -1675,6 +2359,9 @@ async function loadReviews() {
         });
 
         renderPortfolioCategories();
+        
+        // Cache portfolio
+        cacheData(CACHE_KEYS.PORTFOLIO, portfolioData);
       } catch (error) {
         console.error('Portfolio error:', error);
       }
@@ -1697,8 +2384,8 @@ async function loadReviews() {
       Object.keys(portfolioData).forEach(category => {
         const data = portfolioData[category];
         const card = document.createElement('button');
-        card.className = 'rounded-xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 hover:border-white/20 transition-colors text-left group cursor-pointer';
-        card.innerHTML = `
+        card.className = 'shimmer-on-hover rounded-xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 hover:border-white/20 transition-colors text-left group cursor-pointer';
+          card.innerHTML = `
           <div class="flex items-center gap-3 mb-3">
             <i data-lucide="${categoryIcons[category] || 'image'}" class="h-6 w-6 text-[#FF6B00]"></i>
             <h3 class="text-base font-semibold text-white group-hover:text-[#FF6B00] transition-colors">${data.display}</h3>
@@ -1726,10 +2413,9 @@ function scrollToPortfolio() {
 
     // Gallery functions
     function openGallery(category) {
-  scrollToPortfolio(); // ADD THIS LINE
+  scrollToPortfolio();
   
   if (!portfolioData[category]) return;
-  // ... rest of function
       
       currentGallery = portfolioData[category].items;
       currentGalleryIndex = 0;
@@ -1750,9 +2436,56 @@ function scrollToPortfolio() {
         renderCardStack();
         spinner.classList.add('hidden');
         cardStack.style.opacity = '1';
+        
+        // ATTACH NAVIGATION LISTENERS NOW (when gallery is visible)
+        attachGalleryNavListeners();
+        
         if (window.lucide) window.lucide.createIcons();
       }, 300);
     }
+
+// Attach navigation listeners when gallery opens
+    function attachGalleryNavListeners() {
+      console.log('🔗 Attaching gallery navigation listeners...');
+      
+      const prevBtn = document.getElementById('prevCard');
+      const nextBtn = document.getElementById('nextCard');
+      
+      console.log('prevCard button:', prevBtn);
+      console.log('nextCard button:', nextBtn);
+    
+      if (prevBtn) {
+        // Remove old listener if exists
+        prevBtn.replaceWith(prevBtn.cloneNode(true));
+        const newPrevBtn = document.getElementById('prevCard');
+        
+        newPrevBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('✅ Previous button clicked!');
+          navigateGallery(-1);
+        });
+        console.log('✅ Previous listener attached');
+      } else {
+        console.error('❌ prevCard not found');
+      }
+    }
+
+      if (nextBtn) {
+        // Remove old listener if exists
+        nextBtn.replaceWith(nextBtn.cloneNode(true));
+        const newNextBtn = document.getElementById('nextCard');
+        
+        newNextBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('✅ Next button clicked!');
+          navigateGallery(1);
+        });
+        console.log('✅ Next listener attached');
+      } else {
+        console.error('❌ nextCard not found');
+      }
 
     function renderCardStack() {
       const stack = document.getElementById('cardStack');
@@ -1774,7 +2507,7 @@ function scrollToPortfolio() {
         else if (diff === 1 || (currentGalleryIndex === totalCards - 1 && index === 0)) positionClass = 'right';
         
         return `
-          <div class="stack-card ${positionClass} border border-white/10 bg-[#0B0F19] ${diff === 0 ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}" data-index="${index}">
+          <div class="stack-card ${positionClass} border border-white/10 bg-[#0B0F19] ${diff === 0 ? 'shimmer-on-hover cursor-pointer hover:opacity-90 transition-opacity' : ''}" data-index="${index}">
             <div class="aspect-square bg-black/20 flex items-center justify-center p-4 relative group">
               <img src="${item.imageUrl}" alt="${item.title}" class="max-h-full max-w-full object-contain">
               ${diff === 0 ? `
@@ -1819,15 +2552,28 @@ function scrollToPortfolio() {
     }
 
     function navigateGallery(direction) {
-      if (!currentGallery || currentGallery.length === 0) return;
+      if (!currentGallery || currentGallery.length === 0) {
+        console.error('Cannot navigate - gallery is empty');
+        return;
+      }
+      
+      console.log(`Navigating ${direction > 0 ? 'forward' : 'backward'} from index ${currentGalleryIndex}`);
       
       // Add loading indicator during navigation
       const cardStack = document.getElementById('cardStack');
+      if (!cardStack) {
+        console.error('Card stack element not found');
+        return;
+      }
+      
       cardStack.style.opacity = '0.5';
       cardStack.style.pointerEvents = 'none';
       
       // Calculate new index with wrapping
+      const oldIndex = currentGalleryIndex;
       currentGalleryIndex = (currentGalleryIndex + direction + currentGallery.length) % currentGallery.length;
+      
+      console.log(`Navigated from ${oldIndex} to ${currentGalleryIndex}`);
       
       // Small delay for smooth transition
       setTimeout(() => {
@@ -1843,59 +2589,102 @@ function scrollToPortfolio() {
 
     // Gallery navigation event listeners (set up once, reused for all galleries)
     function setupGalleryNavigation() {
+      console.log('🔧 Setting up gallery navigation...');
+      
       // Close button
-      document.getElementById('closeGallery')?.addEventListener('click', () => {
-        document.getElementById('portfolioGallery').classList.add('hidden');
-        document.body.style.overflow = '';
-      });
-
-      // Previous button
-      document.getElementById('prevCard')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        navigateGallery(-1);
-      });
-
-      // Next button
-      document.getElementById('nextCard')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        navigateGallery(1);
-      });
-
-      // Close gallery on background click
-      document.getElementById('portfolioGallery')?.addEventListener('click', (e) => {
-        if (e.target.id === 'portfolioGallery') {
+      const closeBtn = document.getElementById('closeGallery');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
           document.getElementById('portfolioGallery').classList.add('hidden');
           document.body.style.overflow = '';
-        }
-      });
-    }
+        });
+        console.log('✅ Close button listener attached');
+      }
 
+      // Previous button
+      const prevBtn = document.getElementById('prevCard');
+      console.log('prevCard button:', prevBtn);
+      if (prevBtn) {
+        prevBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Previous button clicked');
+          navigateGallery(-1);
+        });
+        console.log('✅ Previous button listener attached');
+      } else {
+        console.error('❌ prevCard button not found');
+      }
+
+      // Next button
+      const nextBtn = document.getElementById('nextCard');
+      console.log('nextCard button:', nextBtn);
+      if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Next button clicked');
+          navigateGallery(1);
+        });
+        console.log('✅ Next button listener attached');
+      } else {
+        console.error('❌ nextCard button not found');
+      }
+
+      // Close gallery on background click
+      const gallery = document.getElementById('portfolioGallery');
+      if (gallery) {
+        gallery.addEventListener('click', (e) => {
+          if (e.target.id === 'portfolioGallery') {
+            gallery.classList.add('hidden');
+            document.body.style.overflow = '';
+          }
+        });
+        console.log('✅ Background click listener attached');
+      }
+    }
     // Call setup once
     setupGalleryNavigation();
     
     // Add touch swipe to gallery
-    let galleryTouchStartX = 0;
-    const cardStack = document.getElementById('cardStack');
-    
-    cardStack.addEventListener('touchstart', (e) => {
-      galleryTouchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-    
-    cardStack.addEventListener('touchend', (e) => {
-      const touchEndX = e.changedTouches[0].screenX;
-      const diff = galleryTouchStartX - touchEndX;
-      if (Math.abs(diff) > 50) {
-        if (diff > 0) navigateGallery(1);
-        else navigateGallery(-1);
+    function initializeGallerySwipe() {
+      let galleryTouchStartX = 0;
+      const cardStack = document.getElementById('cardStack');
+      
+      if (!cardStack) {
+        console.error('Card stack not found for swipe initialization');
+        return;
       }
-    }, { passive: true });
+      
+      cardStack.addEventListener('touchstart', (e) => {
+        galleryTouchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+      
+      cardStack.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const diff = galleryTouchStartX - touchEndX;
+        if (Math.abs(diff) > 50) {
+          console.log('Swipe detected:', diff > 0 ? 'left' : 'right');
+          if (diff > 0) navigateGallery(1);
+          else navigateGallery(-1);
+        }
+      }, { passive: true });
+      
+      console.log('✅ Gallery swipe initialized');
+    }
+    
+    // Initialize swipe
+    initializeGallerySwipe();
 
     // Keyboard navigation for gallery and lightbox
     document.addEventListener('keydown', (e) => {
-      const galleryOpen = !document.getElementById('portfolioGallery').classList.contains('hidden');
-      const lightboxOpen = !document.getElementById('imageLightbox').classList.contains('hidden');
+      const galleryEl = document.getElementById('portfolioGallery');
+      const lightboxEl = document.getElementById('imageLightbox');
+      
+      if (!galleryEl || !lightboxEl) return;
+      
+      const galleryOpen = !galleryEl.classList.contains('hidden');
+      const lightboxOpen = !lightboxEl.classList.contains('hidden');
       
       // If lightbox is open, only allow ESC to close it
       if (lightboxOpen) {
@@ -1910,13 +2699,15 @@ function scrollToPortfolio() {
       if (galleryOpen) {
         if (e.key === 'ArrowLeft') {
           e.preventDefault();
+          console.log('Left arrow pressed');
           navigateGallery(-1);
         } else if (e.key === 'ArrowRight') {
           e.preventDefault();
+          console.log('Right arrow pressed');
           navigateGallery(1);
         } else if (e.key === 'Escape') {
           e.preventDefault();
-          document.getElementById('portfolioGallery').classList.add('hidden');
+          galleryEl.classList.add('hidden');
           document.body.style.overflow = '';
         }
       }
@@ -2097,7 +2888,7 @@ function initializeTheme() {
       const title = document.getElementById('reviewImageTitle');
       
       img.src = imageUrl;
-      title.textContent = `Testimonial from ${clientName}`;
+      title.textContent = `Evidence from ${clientName}`;
       lightbox.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
       
@@ -2201,7 +2992,34 @@ function showToast(message, type = 'info') {
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 5000);
 }
+// ========== SCROLL-TRIGGERED SHIMMER EFFECT ==========
+function initScrollShimmers() {
+  const shimmerElements = document.querySelectorAll('.scroll-shimmer');
+  
+  const observerOptions = {
+    threshold: 0.1, // Trigger when 10% visible
+    rootMargin: '0px 0px -50px 0px' // Trigger slightly before element enters view
+  };
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        // Optional: Stop observing after first trigger
+        // observer.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
+  
+  shimmerElements.forEach(el => observer.observe(el));
+  
+  console.log(`✨ Scroll shimmers initialized on ${shimmerElements.length} elements`);
+}
+
+// Initialize scroll shimmers after page loads
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(initScrollShimmers, 500); // Small delay to ensure elements are rendered
+});
   </script>
 </body>
 </html>
-
