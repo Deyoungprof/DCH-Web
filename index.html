@@ -1290,18 +1290,21 @@ body {
           </a>
         </div>
       </div>
-      <div class="mt-6 flex items-center justify-between text-xs text-white/50">
-        <p>© 2025 Deyoungprof Creative Hub. All rights reserved.</p>
+    <div class="mt-6 flex items-center justify-between text-xs text-white/50">
+      <p>© 2025 Deyoungprof Creative Hub. All rights reserved.</p>
+      <div class="flex items-center gap-4">
         <p>Built for impact — Lagos, Nigeria.</p>
+        <!-- ⬇️ ADD THIS LINE -->
+        <button onclick="reopenCookieSettings()" class="hover:text-white/80 underline transition-colors">Cookie Preferences</button>
       </div>
     </div>
-  </footer>
+  </div>
+</footer>
 
   <!-- Firebase & App Scripts -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     const firebaseConfig = {
       apiKey: "AIzaSyCVhKuw3k3gmAlJMjMzXtRlc9FAcT_-ks8",
       authDomain: "deyoungprof-creative-hub.firebaseapp.com",
@@ -1322,6 +1325,145 @@ import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy, where }
     let currentGalleryIndex = 0;
     let siteSettings = {};
 
+// ========== ADD AFTER LINE 1683 (right after "let siteSettings = {};") ==========
+
+// ========== COOKIE & CONSENT MANAGEMENT ==========
+
+// Cookie utility functions
+function setCookie(name, value, days) {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${encodeURIComponent(JSON.stringify(value))};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+}
+
+function getCookie(name) {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) {
+      try {
+        return JSON.parse(decodeURIComponent(c.substring(nameEQ.length, c.length)));
+      } catch (e) {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+function deleteCookie(name) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+}
+
+// Generate unique visitor ID
+function generateVisitorId() {
+  return 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// Check consent status
+function hasAnalyticsConsent() {
+  const consent = localStorage.getItem('deyoungprof_cookie_consent');
+  if (!consent) return null; // No choice made yet
+  const consentData = JSON.parse(consent);
+  return consentData.analytics === true;
+}
+
+// Save consent choice
+function saveConsentChoice(analyticsEnabled) {
+  const consentData = {
+    necessary: true, // Always true
+    analytics: analyticsEnabled,
+    timestamp: Date.now()
+  };
+  localStorage.setItem('deyoungprof_cookie_consent', JSON.stringify(consentData));
+  
+  // If analytics disabled, clear visitor cookie
+  if (!analyticsEnabled) {
+    deleteCookie('deyoungprof_visitor');
+  }
+}
+
+// Get or create visitor data
+function getVisitorData() {
+  const consent = hasAnalyticsConsent();
+  
+  // If NO consent decision made yet (null), return minimal anonymous data
+  if (consent === null) {
+    return {
+      visitorId: 'anonymous',
+      isNewVisitor: true,
+      lastVisit: null,
+      visitCount: 0,
+      consentGiven: null
+    };
+  }
+  
+  // If consent explicitly declined, return minimal data
+  if (consent === false) {
+    return {
+      visitorId: 'anonymous',
+      isNewVisitor: true,
+      lastVisit: null,
+      visitCount: 0,
+      consentGiven: false
+    };
+  }
+  
+  // ONLY if consent explicitly given (true), use full tracking
+  let visitor = getCookie('deyoungprof_visitor');
+  
+  if (!visitor) {
+    visitor = {
+      visitorId: generateVisitorId(),
+      firstVisit: Date.now(),
+      lastVisit: Date.now(),
+      visitCount: 1
+    };
+    setCookie('deyoungprof_visitor', visitor, 365);
+    return { ...visitor, isNewVisitor: true, consentGiven: true };
+  } else {
+    visitor.visitCount = (visitor.visitCount || 1) + 1;
+    visitor.lastVisit = Date.now();
+    setCookie('deyoungprof_visitor', visitor, 365);
+    return { ...visitor, isNewVisitor: false, consentGiven: true };
+  }
+}
+// Update visitor data after consent given
+function updateVisitorDataAfterConsent() {
+  
+  // Consent given - use full tracking
+  let visitor = getCookie('deyoungprof_visitor');
+  
+  if (!visitor) {
+    // New visitor
+    visitor = {
+      visitorId: generateVisitorId(),
+      firstVisit: Date.now(),
+      lastVisit: Date.now(),
+      visitCount: 1
+    };
+    setCookie('deyoungprof_visitor', visitor, 365); // 1 year
+    return { ...visitor, isNewVisitor: true, consentGiven: true };
+  } else {
+    // Returning visitor
+    visitor.visitCount = (visitor.visitCount || 1) + 1;
+    visitor.lastVisit = Date.now();
+    setCookie('deyoungprof_visitor', visitor, 365); // Extend for 1 year
+    return { ...visitor, isNewVisitor: false, consentGiven: true };
+  }
+}
+
+// Check if should log visit (prevent refresh spam)
+function shouldLogVisit(lastVisit) {
+  if (!lastVisit) return true;
+  const thirtyMinutes = 30 * 60 * 1000;
+  return (Date.now() - lastVisit) > thirtyMinutes;
+}
+
+// ========== END COOKIE MANAGEMENT ==========
+    
 // Cache management constants
 const CACHE_VERSION = '1.0.0';
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
@@ -1504,12 +1646,34 @@ function startAutoRetry() {
 
     // Initialize
     document.addEventListener('DOMContentLoaded', async () => {
-      if (window.lucide) window.lucide.createIcons();
-      // Initialize theme
-initializeTheme();
+  console.log('🚀 Page initializing...');
+  
+  if (window.lucide) window.lucide.createIcons();
+  
+  // Initialize theme first
+  initializeTheme();
 
-// Show page loader
-      const pageLoader = document.getElementById('pageLoader');
+  // Initialize cookie banner AFTER a short delay to ensure DOM is ready
+  setTimeout(() => {
+    console.log('🍪 Initializing cookie banner...');
+    if (window.initCookieBanner) {
+      window.initCookieBanner();
+    } else {
+      console.error('❌ initCookieBanner not found');
+    }
+  }, 500);
+  
+  // Track page visit ONLY if consent already given
+  const existingConsent = hasAnalyticsConsent();
+
+  if (existingConsent === true) {
+    await trackPageVisit();
+  } else {
+    console.log('Waiting for user consent before tracking...');
+  }
+
+  // Show page loader
+  const pageLoader = document.getElementById('pageLoader');
       
       try {
         await loadSiteData();
@@ -1868,12 +2032,16 @@ async function renderTeamMembersFromCache() {
           });
 
           // Update contact info
-document.getElementById('contactEmail').textContent = siteSettings.contact?.email || 'stephen@bi-okoto.com';
-document.getElementById('contactAddress').textContent = siteSettings.contact?.address || '4, Mbere Close, Morogbo Bus Stop, Agbara, Badagry, Lagos';
+const emailEl = document.getElementById('contactEmail');
+if (emailEl) emailEl.textContent = siteSettings.contact?.email || 'stephen@bi-okoto.com';
+
+const addressEl = document.getElementById('contactAddress');
+if (addressEl) addressEl.textContent = siteSettings.contact?.address || '4, Mbere Close, Morogbo Bus Stop, Agbara, Badagry, Lagos';
 
 // Update Instagram
 const instagramUrl = siteSettings.social?.instagram || '#';
-document.getElementById('footerInstagram').href = instagramUrl;
+const footerInstagram = document.getElementById('footerInstagram');
+if (footerInstagram) footerInstagram.href = instagramUrl;
 
           // Update logos
 if (siteSettings.logos?.main) {
@@ -2157,78 +2325,82 @@ async function loadTeamMembers() {
     }
 
     function initializeCarousel() {
-      const track = document.getElementById('carouselTrack');
-      const prevBtn = document.getElementById('prevSlide');
-      const nextBtn = document.getElementById('nextSlide');
-      
-      if (!track || carouselSlides.length === 0) {
-        console.log('Carousel not ready - skipping initialization');
-        return;
-      }
+  const track = document.getElementById('carouselTrack');
+  const prevBtn = document.getElementById('prevSlide');
+  const nextBtn = document.getElementById('nextSlide');
+  
+  if (!track || carouselSlides.length === 0) {
+    console.log('Carousel not ready - skipping initialization');
+    return;
+  }
 
-      function goToSlide(index) {
-        carouselIndex = (index + carouselSlides.length) % carouselSlides.length;
-        track.style.transform = `translateX(-${carouselIndex * 100}%)`;
-        
-        document.querySelectorAll('[data-dot]').forEach((dot, i) => {
-          dot.classList.toggle('bg-white/40', i === carouselIndex);
-          dot.classList.toggle('bg-white/20', i !== carouselIndex);
-        });
-      }
+  function goToSlide(index) {
+    carouselIndex = (index + carouselSlides.length) % carouselSlides.length;
+    track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+    
+    document.querySelectorAll('[data-dot]').forEach((dot, i) => {
+      dot.classList.toggle('bg-white/40', i === carouselIndex);
+      dot.classList.toggle('bg-white/20', i !== carouselIndex);
+    });
+  }
+  
+  // Add navigation button listeners
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => goToSlide(carouselIndex - 1));
+  }
+  
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => goToSlide(carouselIndex + 1));
+  }
+  
+  document.querySelectorAll('[data-dot]').forEach(dot => {
+    dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.dot)));
+  });
 
-      prevBtn?.addEventListener('click', () => goToSlide(carouselIndex - 1));
-      nextBtn?.addEventListener('click', () => goToSlide(carouselIndex + 1));
-      
-      document.querySelectorAll('[data-dot]').forEach(dot => {
-        dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.dot)));
-      });
-
-      // Add click listeners to carousel slides for lightbox
-      setTimeout(() => {
-        document.querySelectorAll('.carousel-slide-clickable').forEach(slideEl => {
-          slideEl.addEventListener('click', (e) => {
-            // Don't open lightbox if clicking navigation buttons
-            if (e.target.closest('#prevSlide') || e.target.closest('#nextSlide') || e.target.closest('[data-dot]')) {
-              return;
-            }
-            
-            const slideIndex = parseInt(slideEl.dataset.carouselIndex);
-            const slide = carouselSlides[slideIndex];
-            if (slide) {
-              openImageLightbox(
-                slide.imageUrl,
-                slide.title,
-                'Carousel Slide',
-                slide.description || '',
-                slide
-              );
-            }
-          });
-        });
-        console.log('✅ Carousel click listeners attached');
-      }, 100);
-
-      // Auto-rotate
-      setInterval(() => goToSlide(carouselIndex + 1), 6000);
-
-      // Touch swipe support
-      let touchStartX = 0;
-      let touchEndX = 0;
-      
-      track.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-      }, { passive: true });
-      
-      track.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        const diff = touchStartX - touchEndX;
-        if (Math.abs(diff) > 50) {
-          if (diff > 0) goToSlide(carouselIndex + 1);
-          else goToSlide(carouselIndex - 1);
+  // Add click listeners to carousel slides for lightbox
+  setTimeout(() => {
+    document.querySelectorAll('.carousel-slide-clickable').forEach(slideEl => {
+      slideEl.addEventListener('click', (e) => {
+        if (e.target.closest('#prevSlide') || e.target.closest('#nextSlide') || e.target.closest('[data-dot]')) {
+          return;
         }
-      }, { passive: true });
-    }
+        
+        const slideIndex = parseInt(slideEl.dataset.carouselIndex);
+        const slide = carouselSlides[slideIndex];
+        if (slide) {
+          openImageLightbox(
+            slide.imageUrl,
+            slide.title,
+            'Carousel Slide',
+            slide.description || '',
+            slide
+          );
+        }
+      });
+    });
+    console.log('✅ Carousel click listeners attached');
+  }, 100);
 
+  // Auto-rotate
+  setInterval(() => goToSlide(carouselIndex + 1), 6000);
+
+  // Touch swipe support
+  let touchStartX = 0;
+  let touchEndX = 0;
+  
+  track.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  
+  track.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) goToSlide(carouselIndex + 1);
+      else goToSlide(carouselIndex - 1);
+    }
+  }, { passive: true });
+}
     // Load services
     // Load services
 async function loadServices() {
@@ -2479,55 +2651,9 @@ function scrollToPortfolio() {
         spinner.classList.add('hidden');
         cardStack.style.opacity = '1';
         
-        // ATTACH NAVIGATION LISTENERS NOW (when gallery is visible)
-        attachGalleryNavListeners();
-        
         if (window.lucide) window.lucide.createIcons();
       }, 300);
     }
-
-// Attach navigation listeners when gallery opens
-    function attachGalleryNavListeners() {
-      console.log('🔗 Attaching gallery navigation listeners...');
-      
-      const prevBtn = document.getElementById('prevCard');
-      const nextBtn = document.getElementById('nextCard');
-      
-      console.log('prevCard button:', prevBtn);
-      console.log('nextCard button:', nextBtn);
-    
-      if (prevBtn) {
-        // Remove old listener if exists
-        prevBtn.replaceWith(prevBtn.cloneNode(true));
-        const newPrevBtn = document.getElementById('prevCard');
-        
-        newPrevBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('✅ Previous button clicked!');
-          navigateGallery(-1);
-        });
-        console.log('✅ Previous listener attached');
-      } else {
-        console.error('❌ prevCard not found');
-      }
-    }
-
-      if (nextBtn) {
-        // Remove old listener if exists
-        nextBtn.replaceWith(nextBtn.cloneNode(true));
-        const newNextBtn = document.getElementById('nextCard');
-        
-        newNextBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('✅ Next button clicked!');
-          navigateGallery(1);
-        });
-        console.log('✅ Next listener attached');
-      } else {
-        console.error('❌ nextCard not found');
-      }
 
     function renderCardStack() {
       const stack = document.getElementById('cardStack');
@@ -3034,6 +3160,580 @@ function showToast(message, type = 'info') {
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 5000);
 }
+
+
+// ========== COOKIE BANNER & VISIT TRACKING ==========
+
+// Initialize cookie banner
+window.initCookieBanner = function() {
+  console.log('🍪 initCookieBanner called');
+  
+  const consent = localStorage.getItem('deyoungprof_cookie_consent');
+  const banner = document.getElementById('cookieBanner');
+  
+  if (!banner) {
+    console.error('❌ Cookie banner element not found');
+    return;
+  }
+  
+  console.log('Consent status:', consent ? 'EXISTS' : 'NONE');
+  
+  // Show banner if no consent decision made
+  if (!consent) {
+    console.log('📢 No consent found - will show banner');
+    
+    // Wait for loader to disappear before showing banner
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds max (50 * 100ms)
+    
+    const checkLoader = setInterval(() => {
+      attempts++;
+      const loader = document.getElementById('pageLoader');
+      const loaderHidden = !loader || loader.style.display === 'none' || window.getComputedStyle(loader).opacity === '0';
+      
+      if (loaderHidden || attempts >= maxAttempts) {
+        clearInterval(checkLoader);
+        
+        if (attempts >= maxAttempts) {
+          console.warn('⚠️ Loader check timed out - showing banner anyway');
+        } else {
+          console.log('✅ Loader gone - showing banner');
+        }
+        
+        setTimeout(() => {
+          banner.classList.remove('opacity-0', 'pointer-events-none', 'hide');
+          banner.classList.add('show');
+          console.log('🍪 Banner should now be visible');
+          
+          if (window.lucide) {
+            window.lucide.createIcons();
+            console.log('✅ Lucide icons refreshed in banner');
+          }
+        }, 800);
+      }
+    }, 100);
+  
+  } else {
+    console.log('✅ Consent already given - banner hidden');
+    banner.classList.add('hide');
+  }
+}
+
+// ========== COOKIE BANNER EVENT LISTENERS (OUTSIDE initCookieBanner) ==========
+
+// Accept button - defined globally to avoid duplicate listeners
+document.getElementById('acceptCookiesBtn')?.addEventListener('click', async () => {
+  console.log('✅ Accept button clicked');
+  saveConsentChoice(true);
+  
+  const banner = document.getElementById('cookieBanner');
+  if (banner) {
+    banner.classList.add('hide');
+    banner.classList.remove('show');
+    
+    setTimeout(() => {
+      banner.classList.add('opacity-0', 'pointer-events-none');
+    }, 300);
+  }
+  
+  showToast('Cookie preferences saved!', 'success');
+  
+  // Track visit now that consent is given
+  await trackPageVisit();
+});
+
+// Settings button
+document.getElementById('cookieSettingsBtn')?.addEventListener('click', () => {
+  console.log('⚙️ Settings button clicked');
+  openCookieSettings();
+});
+
+// Save preferences button
+document.getElementById('savePreferencesBtn')?.addEventListener('click', async () => {
+  console.log('💾 Save preferences clicked');
+  
+  const analyticsEnabled = document.getElementById('analyticsToggle').checked;
+  saveConsentChoice(analyticsEnabled);
+  closeCookieSettings();
+  
+  const banner = document.getElementById('cookieBanner');
+  if (banner) {
+    banner.classList.add('hide');
+    banner.classList.remove('show');
+    
+    setTimeout(() => {
+      banner.classList.add('opacity-0', 'pointer-events-none');
+    }, 300);
+  }
+  
+  if (analyticsEnabled) {
+    showToast('Cookie preferences saved! Analytics enabled.', 'success');
+    await trackPageVisit();
+  } else {
+    showToast('Cookie preferences saved. You can change this anytime in the footer.', 'info');
+  }
+});
+
+// ========== END COOKIE BANNER EVENT LISTENERS ==========
+
+window.openCookieSettings = function() {
+  const modal = document.getElementById('cookieSettingsModal');
+  modal.classList.remove('hidden');
+  
+  // Set current preference
+  const consent = localStorage.getItem('deyoungprof_cookie_consent');
+  if (consent) {
+    const consentData = JSON.parse(consent);
+    document.getElementById('analyticsToggle').checked = consentData.analytics;
+  }
+  
+  if (window.lucide) window.lucide.createIcons();
+}
+
+window.closeCookieSettings = function() {
+  document.getElementById('cookieSettingsModal').classList.add('hidden');
+}
+
+// Allow users to reopen cookie settings from footer
+window.reopenCookieSettings = function() {
+  const modal = document.getElementById('cookieSettingsModal');
+  const banner = document.getElementById('cookieBanner');
+  
+  // Show settings modal
+  if (modal) {
+    modal.classList.remove('hidden');
+    
+    // Load current consent status
+    const consent = localStorage.getItem('deyoungprof_cookie_consent');
+    if (consent) {
+      const consentData = JSON.parse(consent);
+      document.getElementById('analyticsToggle').checked = consentData.analytics || false;
+    } else {
+      // Default to checked if no previous choice
+      document.getElementById('analyticsToggle').checked = true;
+    }
+    
+    if (window.lucide) window.lucide.createIcons();
+  }
+  
+  // Hide banner if showing
+  if (banner) {
+    banner.classList.add('opacity-0', 'pointer-events-none');
+    banner.classList.remove('show');
+  }
+};
+
+// Get visitor location via IP
+async function getVisitorLocation() {
+  try {
+    // Using ipapi.co (free, no API key needed, 1000 requests/day)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    try {
+      const response = await fetch('https://ipapi.co/json/', { 
+        signal: controller.signal 
+      });
+      clearTimeout(timeoutId);
+      
+      const data = await response.json();
+      return {
+        ip: data.ip || 'Unknown',
+        city: data.city || 'Unknown',
+        region: data.region || 'Unknown',
+        country: data.country_name || 'Unknown',
+        countryCode: data.country_code || 'Unknown',
+        timezone: data.timezone || 'Unknown',
+        latitude: data.latitude || null,
+        longitude: data.longitude || null
+      };
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log('Location fetch timed out');
+      } else {
+        console.log('Location detection failed:', error);
+      }
+      return {
+        ip: 'Unknown',
+        city: 'Unknown',
+        region: 'Unknown',
+        country: 'Unknown',
+        countryCode: 'Unknown',
+        timezone: 'Unknown',
+        latitude: null,
+        longitude: null
+      };
+    }
+  } catch (error) {
+    console.log('Location detection failed:', error);
+    return {
+      ip: 'Unknown',
+      city: 'Unknown',
+      region: 'Unknown',
+      country: 'Unknown',
+      countryCode: 'Unknown',
+      timezone: 'Unknown',
+      latitude: null,
+      longitude: null
+    };
+  }
+}
+
+// Get current page identifier
+function getCurrentPage() {
+  const hash = window.location.hash || '#home';
+  const pageNames = {
+    '#home': 'Home',
+    '#services': 'Services',
+    '#portfolio': 'Portfolio',
+    '#about': 'About',
+    '#contact': 'Contact',
+    '#reviews': 'Reviews'
+  };
+  return pageNames[hash] || 'Home';
+}
+
+// Track page visit
+async function trackPageVisit() {
+  console.log('📊 trackPageVisit() called');
+  
+  try {
+    // Check consent
+    const consent = hasAnalyticsConsent();
+    console.log('1️⃣ Consent check:', consent);
+    
+    // If consent declined or pending, still log ANONYMOUS aggregate stats
+    if (consent !== true) {
+      console.log('⚠️ Analytics blocked - logging anonymous aggregate only');
+      
+      // Log anonymous page view
+      try {
+        console.log('2️⃣ Attempting anonymous log...');
+        await addDoc(collection(db, 'anonymousPageViews'), {
+          timestamp: serverTimestamp(),
+          page: getCurrentPage(),
+          consentStatus: consent === null ? 'pending' : 'declined',
+        });
+        console.log('✅ Anonymous page view logged');
+      } catch (error) {
+        console.error('❌ Anonymous logging failed:', error);
+      }
+      
+      return;
+    }
+    
+    console.log('3️⃣ Full tracking authorized, proceeding...');
+    
+    // Get visitor data
+    const visitor = getVisitorData();
+    console.log('4️⃣ Visitor data:', visitor);
+    
+    // Check if should log
+    if (!shouldLogVisit(visitor.lastVisit)) {
+      console.log('⏭️ Visit not logged - too soon since last visit');
+      return;
+    }
+    
+    console.log('5️⃣ Getting location...');
+    const location = await getVisitorLocation();
+    console.log('6️⃣ Location:', location);
+    
+    // Get device info
+    const deviceInfo = {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      screenResolution: `${window.screen.width}x${window.screen.height}`,
+      viewport: `${window.innerWidth}x${window.innerHeight}`,
+      online: navigator.onLine,
+      referrer: document.referrer || 'Direct'
+    };
+    
+    console.log('7️⃣ Device info:', deviceInfo);
+    
+    // Prepare visit data
+    const visitData = {
+      timestamp: serverTimestamp(),
+      visitorId: visitor.visitorId,
+      isNewVisitor: visitor.isNewVisitor,
+      visitCount: visitor.visitCount || 1,
+      consentGiven: visitor.consentGiven !== false,
+      page: getCurrentPage(),
+      location: location,
+      deviceInfo: deviceInfo,
+      sessionId: sessionStorage.getItem('session_id') || generateSessionId()
+    };
+    
+    console.log('8️⃣ Visit data prepared:', visitData);
+    
+    // Save session ID
+    if (!sessionStorage.getItem('session_id')) {
+      sessionStorage.setItem('session_id', visitData.sessionId);
+    }
+    
+    // Log to Firebase
+    console.log('9️⃣ Writing to Firebase...');
+    const docRef = await addDoc(collection(db, 'pageViews'), visitData);
+    console.log('✅ Visit tracked successfully! Doc ID:', docRef.id);
+    
+    // Update visitor stats summary
+    console.log('🔟 Updating stats...');
+    await updateVisitorStats(visitData);
+    console.log('✅ Stats updated');
+    
+  } catch (error) {
+    console.error('❌ Visit tracking error:', error);
+    console.error('Error details:', error.message, error.stack);
+  }
+}
+
+// Generate session ID
+function generateSessionId() {
+  return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// Update visitor stats summary
+async function updateVisitorStats(visitData) {
+  try {
+    const statsRef = doc(db, 'visitorStats', 'summary');
+    const statsDoc = await getDoc(statsRef);
+    
+    if (statsDoc.exists()) {
+      const currentStats = statsDoc.data();
+      
+      // Update counts
+      const updates = {
+        totalVisits: (currentStats.totalVisits || 0) + 1,
+        lastUpdated: serverTimestamp()
+      };
+      
+      // Update unique visitors count
+      if (visitData.isNewVisitor) {
+        updates.uniqueVisitors = (currentStats.uniqueVisitors || 0) + 1;
+      }
+      
+      // Update popular pages
+      const popularPages = currentStats.popularPages || {};
+      popularPages[visitData.page] = (popularPages[visitData.page] || 0) + 1;
+      updates.popularPages = popularPages;
+      
+      // Update countries
+      const countries = currentStats.countries || {};
+      if (visitData.location.country !== 'Unknown') {
+        countries[visitData.location.country] = (countries[visitData.location.country] || 0) + 1;
+        updates.countries = countries;
+      }
+      
+      await updateDoc(statsRef, updates);
+    } else {
+      // Create initial stats
+      await setDoc(statsRef, {
+        totalVisits: 1,
+        uniqueVisitors: visitData.isNewVisitor ? 1 : 0,
+        popularPages: { [visitData.page]: 1 },
+        countries: visitData.location.country !== 'Unknown' ? { [visitData.location.country]: 1 } : {},
+        createdAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
+      });
+    }
+  } catch (error) {
+    console.error('Stats update error:', error);
+  }
+}
+
+// Track page changes (for single-page navigation)
+window.addEventListener('hashchange', () => {
+  trackPageVisit();
+});
+
+// ========== END VISIT TRACKING ==========
+
+// ========== COOKIE BANNER DEBUG & VERIFICATION ==========
+
+// Run verification after page fully loads
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    console.log('=== COOKIE BANNER VERIFICATION ===');
+    
+    const banner = document.getElementById('cookieBanner');
+    const modal = document.getElementById('cookieSettingsModal');
+    const acceptBtn = document.getElementById('acceptCookiesBtn');
+    const settingsBtn = document.getElementById('cookieSettingsBtn');
+    const saveBtn = document.getElementById('savePreferencesBtn');
+    const consent = localStorage.getItem('deyoungprof_cookie_consent');
+    
+    console.log('Banner element:', banner ? '✅ Found' : '❌ Missing');
+    console.log('Modal element:', modal ? '✅ Found' : '❌ Missing');
+    console.log('Accept button:', acceptBtn ? '✅ Found' : '❌ Missing');
+    console.log('Settings button:', settingsBtn ? '✅ Found' : '❌ Missing');
+    console.log('Save button:', saveBtn ? '✅ Found' : '❌ Missing');
+    console.log('Consent status:', consent || 'None');
+    
+    if (banner) {
+      const styles = window.getComputedStyle(banner);
+      console.log('Banner visibility:', {
+        opacity: styles.opacity,
+        pointerEvents: styles.pointerEvents,
+        display: styles.display,
+        classes: banner.className
+      });
+    }
+    
+    console.log('=== END VERIFICATION ===');
+  }, 2000); // Check 2 seconds after page load
+});
+
+// Manual test functions (call from browser console)
+window.testCookieBanner = function() {
+  console.log('🧪 Testing cookie banner...');
+  
+  // Clear consent
+  localStorage.removeItem('deyoungprof_cookie_consent');
+  deleteCookie('deyoungprof_visitor');
+  
+  // Reload page
+  console.log('✅ Consent cleared. Reloading page...');
+  setTimeout(() => location.reload(), 1000);
+};
+
+window.testCookieAccept = function() {
+  console.log('🧪 Simulating Accept click...');
+  document.getElementById('acceptCookiesBtn')?.click();
+};
+
+window.testCookieSettings = function() {
+  console.log('🧪 Simulating Settings click...');
+  document.getElementById('cookieSettingsBtn')?.click();
+};
+
+window.testCookieSave = function() {
+  console.log('🧪 Simulating Save click...');
+  document.getElementById('savePreferencesBtn')?.click();
+};
+
+console.log('🧪 Cookie banner test functions loaded:');
+console.log('  testCookieBanner() - Clear consent and reload');
+console.log('  testCookieAccept() - Simulate Accept button');
+console.log('  testCookieSettings() - Open settings modal');
+console.log('  testCookieSave() - Save preferences');
+
+// ========== END DEBUG CODE ==========
+
   </script>
+
+<!-- Cookie Consent Banner -->
+<div id="cookieBanner" class="fixed bottom-4 right-4 z-[10000] max-w-sm rounded-xl border border-white/10 bg-[#0B0F19]/95 backdrop-blur-xl p-5 shadow-2xl opacity-0 pointer-events-none animate-slide-up transition-opacity duration-300">
+    <div class="flex items-start gap-3 mb-4">
+    <div class="text-2xl">🍪</div>
+    <div class="flex-1">
+      <h3 class="text-base font-semibold text-white mb-2">Cookie Preferences</h3>
+      <p class="text-sm text-white/70 leading-relaxed">
+        We use cookies for analytics. By continuing, you accept our cookie policy.
+      </p>
+    </div>
+  </div>
+  <div class="flex gap-2">
+    <button id="acceptCookiesBtn" class="flex-1 rounded-md bg-[#FF6B00] px-4 py-2 text-sm text-white hover:bg-[#ff7b1b] transition-colors">
+      Accept
+    </button>
+    <button id="cookieSettingsBtn" class="flex-1 rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors">
+      Settings
+    </button>
+  </div>
+</div>
+
+<!-- Cookie Settings Modal -->
+<div id="cookieSettingsModal" class="fixed inset-0 z-[250] hidden">
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeCookieSettings()"></div>
+  <div class="relative h-full flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-xl border border-white/10 bg-[#0B0F19] p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-semibold text-white">Cookie Preferences</h3>
+        <button onclick="closeCookieSettings()" class="text-white/60 hover:text-white transition-colors">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-4 mb-6">
+        <!-- Necessary Cookies -->
+        <div class="rounded-lg border border-white/10 bg-white/5 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="shield-check" class="h-5 w-5 text-[#FF6B00]"></i>
+              <h4 class="text-sm font-semibold text-white">Necessary Cookies</h4>
+            </div>
+            <span class="text-xs text-white/60 bg-white/10 px-2 py-1 rounded">Always Active</span>
+          </div>
+          <p class="text-xs text-white/60 leading-relaxed">
+            Required for site functionality. Cannot be disabled.
+          </p>
+        </div>
+        
+        <!-- Analytics Cookies -->
+        <div class="rounded-lg border border-white/10 bg-white/5 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="bar-chart-3" class="h-5 w-5 text-[#FF6B00]"></i>
+              <h4 class="text-sm font-semibold text-white">Analytics Cookies</h4>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="analyticsToggle" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6B00]"></div>
+            </label>
+          </div>
+          <p class="text-xs text-white/60 leading-relaxed">
+            Help us understand visitor behavior and improve our services.
+          </p>
+        </div>
+      </div>
+      
+      <button id="savePreferencesBtn" class="w-full rounded-md bg-[#FF6B00] px-4 py-3 text-sm font-medium text-white hover:bg-[#ff7b1b] transition-colors">
+        Save Preferences
+      </button>
+      
+      <p class="text-xs text-white/50 text-center mt-4">
+        <a href="#contact" class="hover:text-white/80 underline">Privacy Policy</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Cookie Preferences Link in Footer (Optional - for users to change later) -->
+<style>
+  @keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out forwards;
+}
+
+/* Cookie banner states */
+#cookieBanner {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#cookieBanner.show {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+#cookieBanner.hide {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(20px);
+}
+</style>
+
+<!-- ========== END COOKIE BANNER HTML ========== -->
+
 </body>
 </html>
