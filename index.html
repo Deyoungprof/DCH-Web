@@ -401,7 +401,13 @@ body {
     justify-content: center !important;
   }
 
-  
+  /* Toast animation */
+.custom-toast {
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
 } ← CLOSING BRACE OF MEDIA QUERY
 
     .img-placeholder {
@@ -1484,6 +1490,9 @@ let firebaseAvailable = true;
 let fallbackDataLoaded = false;
 let autoRetryInterval = null;
 
+// ========== UNIFIED RENDER HELPER - ADD AFTER autoRetryInterval ==========
+
+
 // ========== CACHE & FALLBACK FUNCTIONS ==========
 
 // Save data to localStorage cache
@@ -1536,8 +1545,12 @@ function clearCache() {
 }
 
 // Load fallback data from fallback-data.json
+// Load fallback data from fallback-data.json and render
 async function loadFallbackData() {
-  if (fallbackDataLoaded) return true;
+  if (fallbackDataLoaded) {
+    console.log('📦 Fallback data already loaded, rendering...');
+    return await renderAllSections();
+  }
   
   try {
     console.log('📥 Loading fallback-data.json...');
@@ -1548,7 +1561,7 @@ async function loadFallbackData() {
     }
     
     const fallbackData = await response.json();
-    console.log('✅ Fallback data loaded:', fallbackData);
+    console.log('✅ Fallback data loaded successfully');
     
     // Store in variables
     carouselSlides = fallbackData.carouselSlides || [];
@@ -1567,7 +1580,8 @@ async function loadFallbackData() {
     
     siteSettings = fallbackData.siteSettings || {};
     
-    // Cache the fallback data
+    // Cache the fallback data for future use
+    console.log('💾 Caching fallback data...');
     cacheData(CACHE_KEYS.CAROUSEL, carouselSlides);
     cacheData(CACHE_KEYS.PORTFOLIO, portfolioData);
     cacheData(CACHE_KEYS.SERVICES, fallbackData.services || []);
@@ -1576,12 +1590,58 @@ async function loadFallbackData() {
     cacheData(CACHE_KEYS.REVIEWS, fallbackData.reviews || []);
     cacheData(CACHE_KEYS.TEAM, fallbackData.teamMembers || []);
     
+    console.log('✅ Fallback data cached');
+    
     fallbackDataLoaded = true;
-    return true;
+    
+    // Now render all sections
+    return await renderAllSections();
   } catch (error) {
     console.error('❌ Failed to load fallback data:', error);
+    console.error('Error details:', error.message);
     return false;
   }
+}
+
+// Helper function to render all sections (used by fallback)
+async function renderAllSections() {
+  console.log('🎨 Rendering all sections...');
+  
+  const renderTasks = [
+    { name: 'Settings', fn: async () => await renderSettings() },
+    { name: 'Carousel', fn: async () => carouselSlides.length > 0 ? renderCarousel() : console.log('⚠️ No carousel data') },
+    { name: 'Services', fn: async () => await renderServices() },
+    { name: 'Reviews', fn: async () => await renderReviews() },
+    { name: 'Portfolio', fn: async () => Object.keys(portfolioData).length > 0 ? renderPortfolioCategories() : console.log('⚠️ No portfolio data') },
+    { name: 'Highlights', fn: async () => await renderHighlights() },
+    { name: 'Team', fn: async () => await renderTeam() }
+  ];
+
+  let successCount = 0;
+  let failCount = 0;
+  const failedSections = [];
+
+  for (const task of renderTasks) {
+    try {
+      await task.fn();
+      console.log(`✅ ${task.name} rendered`);
+      successCount++;
+    } catch (error) {
+      console.error(`❌ ${task.name} render failed:`, error);
+      console.error('Error details:', error.message, error.stack);
+      failCount++;
+      failedSections.push(task.name);
+    }
+  }
+  
+  console.log(`🎨 Rendering complete: ${successCount} success, ${failCount} failed`);
+  
+  if (failCount > 0) {
+    showToast(`Some sections failed: ${failedSections.join(', ')}`, 'error');
+    return false;
+  }
+  
+  return true;
 }
 
 // Show fallback indicator to user
@@ -1653,15 +1713,11 @@ function startAutoRetry() {
   // Initialize theme first
   initializeTheme();
 
-  // Initialize cookie banner AFTER a short delay to ensure DOM is ready
-  setTimeout(() => {
-    console.log('🍪 Initializing cookie banner...');
-    if (window.initCookieBanner) {
-      window.initCookieBanner();
-    } else {
-      console.error('❌ initCookieBanner not found');
-    }
-  }, 500);
+  // Initialize cookie banner ONLY after loader completes
+  // NO setTimeout here - initCookieBanner handles timing internally
+  if (window.initCookieBanner) {
+    window.initCookieBanner();
+  }
   
   // Track page visit ONLY if consent already given
   const existingConsent = hasAnalyticsConsent();
@@ -1706,7 +1762,7 @@ function startAutoRetry() {
       }
     });
 
-    async function loadSiteData() {
+   async function loadSiteData() {
   try {
     // Try Firebase first with timeout
     const timeoutPromise = new Promise((_, reject) => 
@@ -1730,17 +1786,32 @@ function startAutoRetry() {
     
   } catch (error) {
     console.error('❌ Firebase load failed:', error);
-    console.error('Error details:', error.message); // ✅ NEW: More detailed error logging
+    console.error('Error details:', error.message);
     firebaseAvailable = false;
     
     // Try cache first
     if (isCacheValid()) {
-      console.log('📦 Using cached data...');
-      await loadFromCache();
+      console.log('📦 Cache is valid - attempting to use cached data...');
       usingFallback = true;
-      showFallbackIndicator();
-      startAutoRetry();
-      return;
+      
+      try {
+        const cacheSuccess = await loadFromCache();
+        if (cacheSuccess) {
+          console.log('✅ Successfully loaded from cache');
+          showFallbackIndicator();
+          startAutoRetry();
+          return;
+        } else {
+          throw new Error('Cache rendering incomplete');
+        }
+      } catch (cacheError) {
+        console.error('❌ Cache load/render failed:', cacheError);
+        console.error('Error details:', cacheError.message);
+        showToast('Cache corrupted, loading fallback data...', 'info');
+        // Continue to fallback-data.json
+      }
+    } else {
+      console.log('⚠️ Cache is invalid or expired');
     }
     
     // Try fallback-data.json
@@ -1748,20 +1819,8 @@ function startAutoRetry() {
     const fallbackLoaded = await loadFallbackData();
     
     if (fallbackLoaded) {
-      console.log('✅ Using fallback data');
+      console.log('✅ Fallback data loaded and rendered successfully');
       usingFallback = true;
-      
-      // Render everything with fallback data
-      await Promise.all([
-        renderSettingsFromFallback(),
-        renderCarousel(),
-        renderServicesFromFallback(),
-        renderReviewsFromFallback(),
-        renderPortfolioCategories(),
-        renderHeroHighlightsFromFallback(),
-        renderTeamMembersFromFallback()
-      ]);
-      
       showFallbackIndicator();
       startAutoRetry();
     } else {
@@ -1778,243 +1837,387 @@ function startAutoRetry() {
   }
 }
 
-// Load data from localStorage cache
+// Load data from localStorage cache and render
 async function loadFromCache() {
   console.log('📦 Loading from cache...');
   
-  carouselSlides = getCachedData(CACHE_KEYS.CAROUSEL) || [];
-  portfolioData = getCachedData(CACHE_KEYS.PORTFOLIO) || {};
-  siteSettings = getCachedData(CACHE_KEYS.SETTINGS) || {};
-  
-  console.log(`📦 Cache loaded: ${carouselSlides.length} carousel slides, ${Object.keys(portfolioData).length} portfolio categories`);
-  
-  // Render from cache
-  await Promise.all([
-    renderSettingsFromCache(),
-    renderCarousel(),
-    renderServicesFromCache(),
-    renderReviewsFromCache(),
-    renderPortfolioCategories(),
-    renderHeroHighlightsFromCache(),
-    renderTeamMembersFromCache()
-  ]);
-  
-  console.log('✅ All content rendered from cache successfully');
+  try {
+    // Step 1: Load ALL data into memory first
+    const cachedCarousel = getCachedData(CACHE_KEYS.CAROUSEL);
+    const cachedPortfolio = getCachedData(CACHE_KEYS.PORTFOLIO);
+    const cachedServices = getCachedData(CACHE_KEYS.SERVICES);
+    const cachedSettings = getCachedData(CACHE_KEYS.SETTINGS);
+    const cachedHighlights = getCachedData(CACHE_KEYS.HIGHLIGHTS);
+    const cachedReviews = getCachedData(CACHE_KEYS.REVIEWS);
+    const cachedTeam = getCachedData(CACHE_KEYS.TEAM);
+    
+    // Step 2: Validate that we have essential data
+    if (!cachedCarousel && !cachedPortfolio && !cachedServices) {
+      console.warn('⚠️ Cache is empty or corrupted');
+      return false;
+    }
+    
+    // Step 3: Assign to global variables
+    carouselSlides = cachedCarousel || [];
+    portfolioData = cachedPortfolio || {};
+    siteSettings = cachedSettings || {};
+    
+    console.log(`📦 Cache data loaded into memory:`);
+    console.log(`  - ${carouselSlides.length} carousel slides`);
+    console.log(`  - ${Object.keys(portfolioData).length} portfolio categories`);
+    console.log(`  - ${cachedServices?.length || 0} services`);
+    console.log(`  - ${cachedHighlights?.length || 0} highlights`);
+    console.log(`  - ${cachedReviews?.length || 0} reviews`);
+    console.log(`  - ${cachedTeam?.length || 0} team members`);
+    console.log(`  - Settings:`, siteSettings.contact ? 'present' : 'missing');
+    
+    // Step 4: Manually cache the arrays for render functions to use
+    window._cachedServices = cachedServices || [];
+    window._cachedHighlights = cachedHighlights || [];
+    window._cachedReviews = cachedReviews || [];
+    window._cachedTeam = cachedTeam || [];
+    
+    // Step 5: Render all sections using the loaded data
+    const renderSuccess = await renderAllSections();
+    
+    if (!renderSuccess) {
+      console.error('❌ Cache rendering incomplete');
+      return false;
+    }
+    
+    console.log('✅ Cache loaded and rendered successfully');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Cache loading failed:', error);
+    console.error('Error details:', error.message, error.stack);
+    return false;
+  }
 }
-
 // Render functions for fallback/cached data
-async function renderSettingsFromFallback() {
-  if (!siteSettings.contact) return;
+// Unified settings render - works with data in memory (cache or fallback)
+async function renderSettings() {
+  console.log('📦 Rendering settings...');
   
-  // Update WhatsApp links
-  const phone = siteSettings.contact.phone || '2348147732687';
-  const whatsappUrl = `https://wa.me/${phone}`;
-  document.querySelectorAll('#headerWhatsApp, #heroWhatsApp, #servicesWhatsApp, #servicesWhatsApp2, #contactWhatsApp, #contactMapWhatsApp, #footerWhatsApp, #galleryWhatsApp').forEach(el => {
-    if (el) el.href = whatsappUrl;
-  });
+  if (!siteSettings || !siteSettings.contact) {
+    console.warn('⚠️ No settings data available');
+    return;
+  }
+  
+  try {
+    // Update WhatsApp links
+    const phone = siteSettings.contact.phone || '2348147732687';
+    const whatsappUrl = `https://wa.me/${phone}`;
+    document.querySelectorAll('#headerWhatsApp, #heroWhatsApp, #servicesWhatsApp, #servicesWhatsApp2, #contactWhatsApp, #contactMapWhatsApp, #footerWhatsApp, #galleryWhatsApp').forEach(el => {
+      if (el) el.href = whatsappUrl;
+    });
 
-  // Update contact info
-  const emailEl = document.getElementById('contactEmail');
-  const addressEl = document.getElementById('contactAddress');
-  if (emailEl) emailEl.textContent = siteSettings.contact.email || 'stephen@bi-okoto.com';
-  if (addressEl) addressEl.textContent = siteSettings.contact.address || '4, Mbere Close, Morogbo Bus Stop, Agbara, Badagry, Lagos';
+    // Update contact info
+    const emailEl = document.getElementById('contactEmail');
+    const addressEl = document.getElementById('contactAddress');
+    const footerInstagram = document.getElementById('footerInstagram');
+    
+    if (emailEl) emailEl.textContent = siteSettings.contact.email || 'stephen@bi-okoto.com';
+    if (addressEl) addressEl.textContent = siteSettings.contact.address || '4, Mbere Close, Morogbo Bus Stop, Agbara, Badagry, Lagos';
+    if (footerInstagram) footerInstagram.href = siteSettings.social?.instagram || '#';
 
-  // Update logo if available
-  if (siteSettings.logos?.main) {
-    const headerLogo = document.getElementById('headerLogo');
-    const footerLogo = document.getElementById('footerLogo');
-    if (headerLogo) {
-      headerLogo.src = siteSettings.logos.main;
-      headerLogo.classList.remove('hidden');
+    // Update logos
+    if (siteSettings.logos?.main) {
+      const headerLogo = document.getElementById('headerLogo');
+      const footerLogo = document.getElementById('footerLogo');
+      
+      if (headerLogo) {
+        headerLogo.src = siteSettings.logos.main;
+        headerLogo.classList.remove('hidden');
+        headerLogo.onerror = function() {
+          this.classList.add('hidden');
+          document.getElementById('headerLogoFallback')?.classList.remove('hidden');
+        };
+        document.getElementById('headerLogoFallback')?.classList.add('hidden');
+      }
+      
+      if (footerLogo) {
+        footerLogo.src = siteSettings.logos.main;
+        footerLogo.classList.remove('hidden');
+        footerLogo.onerror = function() {
+          this.classList.add('hidden');
+          document.getElementById('footerLogoFallback')?.classList.remove('hidden');
+        };
+        document.getElementById('footerLogoFallback')?.classList.add('hidden');
+      }
     }
-    if (footerLogo) {
-      footerLogo.src = siteSettings.logos.main;
-      footerLogo.classList.remove('hidden');
+
+    // Update location image
+    if (siteSettings.location?.imageUrl) {
+      const locationImg = document.querySelector('#contact .aspect-\\[4\\/3\\] img');
+      if (locationImg) {
+        locationImg.src = siteSettings.location.imageUrl;
+        locationImg.alt = siteSettings.contact?.locationText || 'Location image';
+      }
     }
+
+    // Update location text
+    if (siteSettings.contact?.locationText) {
+      const locationTextElements = document.querySelectorAll('#contact .aspect-\\[4\\/3\\] .text-white\\/80');
+      locationTextElements.forEach(el => {
+        if (el.querySelector('[data-lucide="map"]')) {
+          const icon = el.querySelector('i');
+          el.textContent = '';
+          if (icon) el.appendChild(icon);
+          el.appendChild(document.createTextNode(' ' + siteSettings.contact.locationText));
+        }
+      });
+    }
+    
+    console.log('✅ Settings rendered successfully');
+  } catch (error) {
+    console.error('❌ Settings render failed:', error);
+    throw error;
   }
 }
 
-async function renderSettingsFromCache() {
-  await renderSettingsFromFallback();
-}
 
-async function renderServicesFromFallback() {
+// Unified services render - works with cached data
+async function renderServices() {
+  console.log('📦 Rendering services...');
+  
   const services = getCachedData(CACHE_KEYS.SERVICES) || [];
   const listEl = document.getElementById('servicesList');
-  if (!listEl) return;
+  
+  if (!listEl) {
+    console.error('❌ Services list element not found');
+    throw new Error('Services list element missing from DOM');
+  }
   
   if (services.length === 0) {
+    console.warn('⚠️ No services data available');
     listEl.innerHTML = '<p class="text-white/60 col-span-full">No services available.</p>';
     return;
   }
 
-  listEl.innerHTML = '';
-  services.forEach(data => {
-    const article = document.createElement('article');
-    article.className = 'shimmer-on-hover group rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300';
-    article.innerHTML = `
-      <div class="grid sm:grid-cols-[120px_1fr] gap-4 p-5">
-        <div class="aspect-square rounded-lg overflow-hidden bg-black/20 border border-white/10">
-          <img src="${data.thumbnailUrl || ''}" alt="${data.name}" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
-        </div>
-        <div class="flex flex-col">
-          <div class="flex items-start justify-between gap-3 mb-2">
-            <div class="flex items-center gap-2">
-              <i data-lucide="${data.icon}" class="h-5 w-5 text-[#FF6B00] flex-shrink-0"></i>
-              <h3 class="text-base font-semibold text-white group-hover:text-[#FF6B00] transition-colors">${data.name}</h3>
+  try {
+    listEl.innerHTML = '';
+    services.forEach(data => {
+      const article = document.createElement('article');
+      article.className = 'shimmer-on-hover group rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300';
+      article.innerHTML = `
+        <div class="grid sm:grid-cols-[120px_1fr] gap-4 p-5">
+          <div class="aspect-square rounded-lg overflow-hidden bg-black/20 border border-white/10">
+            <img src="${data.thumbnailUrl || ''}" alt="${data.name}" class="h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'">
+          </div>
+          <div class="flex flex-col">
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <div class="flex items-center gap-2">
+                <i data-lucide="${data.icon}" class="h-5 w-5 text-[#FF6B00] flex-shrink-0"></i>
+                <h3 class="text-base font-semibold text-white group-hover:text-[#FF6B00] transition-colors">${data.name}</h3>
+              </div>
+              <span class="text-sm text-white/80 font-medium whitespace-nowrap">${data.price}</span>
             </div>
-            <span class="text-sm text-white/80 font-medium whitespace-nowrap">${data.price}</span>
-          </div>
-          <p class="text-sm text-white/60 mb-4 flex-1">${data.description}</p>
-          <div class="flex flex-wrap gap-2">
-            <a href="https://wa.me/${siteSettings.contact?.phone || '2348147732687'}?text=${encodeURIComponent('Hello, I\'m interested in: ' + data.name + ' (' + data.price + ')')}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-3 py-2 text-xs text-white hover:bg-[#ff7b1b] transition-colors">
-              <i data-lucide="message-circle" class="h-3 w-3"></i>
-              Order Now
-            </a>
+            <p class="text-sm text-white/60 mb-4 flex-1">${data.description}</p>
+            <div class="flex flex-wrap gap-2">
+              <button class="service-view-samples inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all" data-category="${data.category}">
+                <i data-lucide="images" class="h-3 w-3"></i>
+                View Samples
+              </button>
+              <a href="https://wa.me/${siteSettings.contact?.phone || '2348147732687'}?text=${encodeURIComponent('Hello, I\'m interested in: ' + data.name + ' (' + data.price + ')')}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-[#FF6B00] px-3 py-2 text-xs text-white hover:bg-[#ff7b1b] transition-colors">
+                <i data-lucide="message-circle" class="h-3 w-3"></i>
+                Order Now
+              </a>
+            </div>
           </div>
         </div>
-      </div>
-    `;
-    listEl.appendChild(article);
-  });
+      `;
+      listEl.appendChild(article);
+    });
 
-  if (window.lucide) window.lucide.createIcons();
+    // Add click listeners for "View Samples" buttons
+    document.querySelectorAll('.service-view-samples').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const category = btn.dataset.category;
+        if (category && portfolioData[category]) {
+          openGallery(category);
+        } else {
+          showToast('No samples available for this service yet', 'info');
+        }
+      });
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+    console.log(`✅ Rendered ${services.length} services successfully`);
+  } catch (error) {
+    console.error('❌ Services render failed:', error);
+    throw error;
+  }
 }
 
-async function renderServicesFromCache() {
-  await renderServicesFromFallback();
-}
-
-async function renderReviewsFromFallback() {
+// Unified reviews render - works with cached data
+async function renderReviews() {
+  console.log('📦 Rendering reviews...');
+  
   const reviews = getCachedData(CACHE_KEYS.REVIEWS) || [];
   const container = document.getElementById('reviewsList');
-  if (!container) return;
+  
+  if (!container) {
+    console.error('❌ Reviews list element not found');
+    throw new Error('Reviews list element missing from DOM');
+  }
   
   if (reviews.length === 0) {
+    console.warn('⚠️ No reviews data available');
     container.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-white/40 text-sm">No reviews yet.</p></div>';
     return;
   }
 
-  container.innerHTML = '';
-  reviews.forEach(data => {
-    const card = document.createElement('div');
-    card.className = 'shimmer-on-hover rounded-xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300';
-    
-    const stars = Array(5).fill(0).map((_, i) => 
-      `<i data-lucide="star" class="h-4 w-4 ${i < data.rating ? 'fill-[#FF6B00] text-[#FF6B00]' : 'text-white/20'}"></i>`
-    ).join('');
-    
-    card.innerHTML = `
-      <div class="flex items-center gap-3 mb-4">
-        <div class="h-12 w-12 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-white/5 flex items-center justify-center text-white font-semibold">
-          ${data.clientName.charAt(0)}
+  try {
+    container.innerHTML = '';
+    reviews.forEach(data => {
+      const card = document.createElement('div');
+      card.className = 'shimmer-on-hover rounded-xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300';
+      
+      const stars = Array(5).fill(0).map((_, i) => 
+        `<i data-lucide="star" class="h-4 w-4 ${i < data.rating ? 'fill-[#FF6B00] text-[#FF6B00]' : 'text-white/20'}"></i>`
+      ).join('');
+      
+      card.innerHTML = `
+        <div class="flex items-center gap-3 mb-4">
+          <div class="h-12 w-12 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-white/5 flex items-center justify-center text-white font-semibold">
+            ${data.clientName.charAt(0)}
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-semibold text-white">${data.clientName}</h3>
+            <p class="text-xs text-white/60">${data.projectType || 'Client'}</p>
+          </div>
         </div>
-        <div class="flex-1">
-          <h3 class="text-base font-semibold text-white">${data.clientName}</h3>
-          <p class="text-xs text-white/60">${data.projectType || 'Client'}</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-1 mb-3">${stars}</div>
-      <p class="text-sm text-white/70 leading-relaxed mb-3">${data.review}</p>
-      ${data.imageUrl ? `
-        <div class="mt-3 rounded-lg border border-white/10 overflow-hidden">
-          <img src="${data.imageUrl}" alt="Review evidence" class="w-full h-32 object-cover" loading="lazy" onerror="this.parentElement.style.display='none'">
-        </div>
-      ` : ''}
-    `;
-    container.appendChild(card);
-  });
+        <div class="flex items-center gap-1 mb-3">${stars}</div>
+        <p class="text-sm text-white/70 leading-relaxed mb-3">${data.review}</p>
+        ${data.imageUrl ? `
+          <div class="mt-3 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-[#FF6B00]/50 transition-colors group" onclick="openReviewImage('${data.imageUrl}', '${data.clientName}')">
+            <img src="${data.imageUrl}" alt="Review evidence from ${data.clientName}" class="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" onerror="this.parentElement.style.display='none'">
+            <div class="bg-white/5 px-3 py-2 flex items-center gap-2">
+              <i data-lucide="image" class="h-3 w-3 text-[#FF6B00]"></i>
+              <span class="text-xs text-white/60">Click to view evidence</span>
+            </div>
+          </div>
+        ` : ''}
+      `;
+      container.appendChild(card);
+    });
 
-  if (window.lucide) window.lucide.createIcons();
+    if (window.lucide) window.lucide.createIcons();
+    console.log(`✅ Rendered ${reviews.length} reviews successfully`);
+  } catch (error) {
+    console.error('❌ Reviews render failed:', error);
+    throw error;
+  }
 }
 
-async function renderReviewsFromCache() {
-  await renderReviewsFromFallback();
-}
-
-async function renderHeroHighlightsFromFallback() {
+// Unified highlights render - works with cached data
+async function renderHighlights() {
+  console.log('📦 Rendering highlights...');
+  
   const highlights = getCachedData(CACHE_KEYS.HIGHLIGHTS) || [];
   const container = document.getElementById('heroHighlights');
-  if (!container) return;
+  
+  if (!container) {
+    console.error('❌ Hero highlights element not found');
+    throw new Error('Hero highlights element missing from DOM');
+  }
   
   if (highlights.length === 0) {
+    console.warn('⚠️ No highlights data available');
     container.innerHTML = '<div class="col-span-full text-center py-8"><p class="text-white/40 text-sm">No highlights configured yet.</p></div>';
     return;
   }
 
-  container.innerHTML = '';
-  highlights.forEach(data => {
-    const card = document.createElement('div');
-    card.className = 'rounded-lg border border-white/10 bg-white/5 p-5 hover:bg-white/10 hover:border-white/20 transition-colors';
-    card.innerHTML = `
-      <div class="flex items-center gap-3">
-        <i data-lucide="${data.icon}" class="h-6 w-6 text-[#FF6B00]"></i>
-        <h3 class="text-base font-medium text-white" style="font-family: 'Nexa Bold','Poppins',sans-serif;">${data.title}</h3>
-      </div>
-      <p class="mt-2 text-sm text-white/60">${data.description}</p>
-    `;
-    container.appendChild(card);
-  });
+  try {
+    container.innerHTML = '';
+    highlights.forEach(data => {
+      const card = document.createElement('div');
+      card.className = 'rounded-lg border border-white/10 bg-white/5 p-5 hover:bg-white/10 hover:border-white/20 transition-colors';
+      card.innerHTML = `
+        <div class="flex items-center gap-3">
+          <i data-lucide="${data.icon}" class="h-6 w-6 text-[#FF6B00]"></i>
+          <h3 class="text-base font-medium text-white" style="font-family: 'Nexa Bold','Poppins',sans-serif;">${data.title}</h3>
+        </div>
+        <p class="mt-2 text-sm text-white/60">${data.description}</p>
+      `;
+      container.appendChild(card);
+    });
 
-  if (window.lucide) window.lucide.createIcons();
+    if (window.lucide) window.lucide.createIcons();
+    console.log(`✅ Rendered ${highlights.length} highlights successfully`);
+  } catch (error) {
+    console.error('❌ Highlights render failed:', error);
+    throw error;
+  }
 }
 
-async function renderHeroHighlightsFromCache() {
-  await renderHeroHighlightsFromFallback();
-}
-
-async function renderTeamMembersFromFallback() {
+// Unified team render - works with cached data
+async function renderTeam() {
+  console.log('📦 Rendering team members...');
+  
   const team = getCachedData(CACHE_KEYS.TEAM) || [];
   const container = document.getElementById('teamMembersGrid');
-  if (!container) return;
+  
+  if (!container) {
+    console.error('❌ Team members grid element not found');
+    throw new Error('Team members grid element missing from DOM');
+  }
   
   if (team.length === 0) {
+    console.warn('⚠️ No team data available');
     container.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-white/40 text-sm">Our team section is coming soon.</p></div>';
     return;
   }
 
-  container.innerHTML = '';
-  team.forEach(data => {
-    const card = document.createElement('div');
-    
-    if (data.isCEO) {
-      card.className = 'rounded-xl border-2 border-[#FF6B00]/30 bg-gradient-to-br from-[#FF6B00]/5 to-white/5 overflow-hidden lg:col-span-2 hover:border-[#FF6B00]/50 transition-all duration-300';
-      card.innerHTML = `
-        <div class="grid lg:grid-cols-2 gap-0">
-          <div class="aspect-[4/3] lg:aspect-auto bg-black/20 relative">
-            <img src="${data.imageUrl}" alt="${data.name}" class="h-full w-full object-cover" onerror="this.style.display='none'">
-            <div class="absolute top-3 right-3 bg-[#FF6B00] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
-              <i data-lucide="crown" class="h-3 w-3 inline mr-1"></i>Founder & CEO
+  try {
+    container.innerHTML = '';
+    team.forEach(data => {
+      const card = document.createElement('div');
+      
+      if (data.isCEO) {
+        card.className = 'rounded-xl border-2 border-[#FF6B00]/30 bg-gradient-to-br from-[#FF6B00]/5 to-white/5 overflow-hidden lg:col-span-2 hover:border-[#FF6B00]/50 transition-all duration-300';
+        card.innerHTML = `
+          <div class="grid lg:grid-cols-2 gap-0">
+            <div class="aspect-[4/3] lg:aspect-auto bg-black/20 relative">
+              <img src="${data.imageUrl}" alt="${data.name}" class="h-full w-full object-cover" onerror="this.style.display='none'">
+              <div class="absolute top-3 right-3 bg-[#FF6B00] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
+                <i data-lucide="crown" class="h-3 w-3 inline mr-1"></i>Founder & CEO
+              </div>
+            </div>
+            <div class="p-6 lg:p-8 flex flex-col justify-center">
+              <h3 class="text-xl font-semibold text-white mb-2">${data.name}</h3>
+              <p class="text-[#FF6B00] text-sm font-medium mb-4">${data.role}</p>
+              <p class="text-sm text-white/70 leading-relaxed">${data.bio}</p>
+              <div class="mt-6 flex items-center gap-2 text-sm text-white/60">
+                <i data-lucide="map-pin" class="h-4 w-4 text-[#FF6B00]"></i>
+                <span>Lagos, Nigeria</span>
+              </div>
             </div>
           </div>
-          <div class="p-6 lg:p-8 flex flex-col justify-center">
-            <h3 class="text-xl font-semibold text-white mb-2">${data.name}</h3>
-            <p class="text-[#FF6B00] text-sm font-medium mb-4">${data.role}</p>
-            <p class="text-sm text-white/70 leading-relaxed">${data.bio}</p>
+        `;
+      } else {
+        card.className = 'shimmer-on-hover rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300 group';
+        card.innerHTML = `
+          <div class="aspect-[4/3] bg-black/20 relative overflow-hidden">
+            <img src="${data.imageUrl}" alt="${data.name}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.style.display='none'">
           </div>
-        </div>
-      `;
-    } else {
-      card.className = 'rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300';
-      card.innerHTML = `
-        <div class="aspect-[4/3] bg-black/20 relative overflow-hidden">
-          <img src="${data.imageUrl}" alt="${data.name}" class="h-full w-full object-cover" onerror="this.style.display='none'">
-        </div>
-        <div class="p-5">
-          <h3 class="text-base font-semibold text-white mb-1">${data.name}</h3>
-          <p class="text-[#FF6B00] text-sm font-medium mb-3">${data.role}</p>
-          <p class="text-xs text-white/60 leading-relaxed">${data.bio}</p>
-        </div>
-      `;
-    }
-    container.appendChild(card);
-  });
+          <div class="p-5">
+            <h3 class="text-base font-semibold text-white mb-1" style="font-family: 'Nexa Bold','Poppins',sans-serif;">${data.name}</h3>
+            <p class="text-[#FF6B00] text-sm font-medium mb-3">${data.role}</p>
+            <p class="text-xs text-white/60 leading-relaxed">${data.bio}</p>
+          </div>
+        `;
+      }
+      container.appendChild(card);
+    });
 
-  if (window.lucide) window.lucide.createIcons();
-}
-
-async function renderTeamMembersFromCache() {
-  await renderTeamMembersFromFallback();
+    if (window.lucide) window.lucide.createIcons();
+    console.log(`✅ Rendered ${team.length} team members successfully`);
+  } catch (error) {
+    console.error('❌ Team render failed:', error);
+    throw error;
+  }
 }
 
     // Load settings
@@ -2290,47 +2493,65 @@ async function loadTeamMembers() {
       }
     }
 
-   function renderCarousel() {
-      const track = document.getElementById('carouselTrack');
-      track.innerHTML = carouselSlides.map((slide, index) => `
-        <div class="inline-block align-top w-full h-full">
-          <div class="h-full relative cursor-pointer group flex flex-col carousel-slide-clickable" data-carousel-index="${index}" style="background: var(--bg-primary);">
-            <div class="flex-1 relative overflow-hidden">
-              <img src="${slide.imageUrl}" alt="${slide.title}" loading="lazy" class="w-full h-full object-cover">
-            </div>
-            <div class="absolute inset-0 bg-gradient-to-t from-[#0A0F1C]/80 via-transparent to-transparent pointer-events-none"></div>
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <div class="rounded-full bg-white/20 backdrop-blur-sm p-4 border border-white/30">
-                <i data-lucide="maximize-2" class="h-6 w-6 text-white"></i>
-              </div>
-            </div>
-            <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-              <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80">
-                <i data-lucide="sparkles" class="h-4 w-4 text-[#FF6B00]"></i>
-                ${slide.title}
-              </span>
-              <p class="mt-2 text-sm text-white/90">${slide.description}</p>
-            </div>
+  function renderCarousel() {
+  const track = document.getElementById('carouselTrack');
+  
+  // Handle empty carousel data
+  if (!carouselSlides || carouselSlides.length === 0) {
+    track.innerHTML = `
+      <div class="inline-block align-top w-full h-full">
+        <div class="h-full relative flex items-center justify-center bg-black/30">
+          <p class="text-white/60">No carousel slides available</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  
+  track.innerHTML = carouselSlides.map((slide, index) => `
+    <div class="inline-block align-top w-full h-full">
+      <div class="h-full relative cursor-pointer group flex flex-col carousel-slide-clickable" data-carousel-index="${index}" style="background: var(--bg-primary);">
+        <div class="flex-1 relative overflow-hidden">
+          <img src="${slide.imageUrl}" alt="${slide.title}" loading="lazy" class="w-full h-full object-cover">
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0A0F1C]/80 via-transparent to-transparent pointer-events-none"></div>
+        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <div class="rounded-full bg-white/20 backdrop-blur-sm p-4 border border-white/30">
+            <i data-lucide="maximize-2" class="h-6 w-6 text-white"></i>
           </div>
         </div>
-      `).join('');
+        <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+          <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80">
+            <i data-lucide="sparkles" class="h-4 w-4 text-[#FF6B00]"></i>
+            ${slide.title}
+          </span>
+          <p class="mt-2 text-sm text-white/90">${slide.description}</p>
+        </div>
+      </div>
+    </div>
+  `).join('');
 
-      // Generate dots
-      const dots = document.getElementById('carouselDots');
-      dots.innerHTML = carouselSlides.map((_, i) => `
-        <button class="h-1.5 w-6 rounded-full ${i === 0 ? 'bg-white/40' : 'bg-white/20'} hover:bg-white/70 transition-colors" data-dot="${i}" aria-label="Slide ${i + 1}"></button>
-      `).join('');
+  // Generate dots
+  const dots = document.getElementById('carouselDots');
+  dots.innerHTML = carouselSlides.map((_, i) => `
+    <button class="h-1.5 w-6 rounded-full ${i === 0 ? 'bg-white/40' : 'bg-white/20'} hover:bg-white/70 transition-colors" data-dot="${i}" aria-label="Slide ${i + 1}"></button>
+  `).join('');
 
-      if (window.lucide) window.lucide.createIcons();
-    }
+  if (window.lucide) window.lucide.createIcons();
+}
 
     function initializeCarousel() {
   const track = document.getElementById('carouselTrack');
   const prevBtn = document.getElementById('prevSlide');
   const nextBtn = document.getElementById('nextSlide');
   
-  if (!track || carouselSlides.length === 0) {
-    console.log('Carousel not ready - skipping initialization');
+  if (!track) {
+    console.warn('⚠️ Carousel track element not found');
+    return;
+  }
+  
+  if (!carouselSlides || carouselSlides.length === 0) {
+    console.log('📋 Carousel has no slides - skipping initialization');
     return;
   }
 
@@ -2582,41 +2803,50 @@ async function loadReviews() {
     }
 
     function renderPortfolioCategories() {
-      const container = document.getElementById('portfolioCategories');
-      
-      if (Object.keys(portfolioData).length === 0) {
-        container.innerHTML = '<p class="text-white/60 col-span-full">No portfolio items yet.</p>';
-        return;
-      }
+  const container = document.getElementById('portfolioCategories');
+  
+  if (!portfolioData || Object.keys(portfolioData).length === 0) {
+    container.innerHTML = '<p class="text-white/60 col-span-full">No portfolio items available</p>';
+    return;
+  }
 
-      const categoryIcons = {
-        birthday: 'sparkles', academic: 'book-open', wedding: 'heart',
-        business: 'megaphone', movie: 'clapperboard', church: 'church', brand: 'pen-tool'
-      };
+  const categoryIcons = {
+    birthday: 'sparkles', 
+    academic: 'book-open', 
+    wedding: 'heart',
+    business: 'megaphone', 
+    movie: 'clapperboard', 
+    church: 'church', 
+    brand: 'pen-tool'
+  };
 
-      container.innerHTML = '';
-      Object.keys(portfolioData).forEach(category => {
-        const data = portfolioData[category];
-        const card = document.createElement('button');
-        card.className = 'shimmer-on-hover rounded-xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 hover:border-white/20 transition-colors text-left group cursor-pointer';
-          card.innerHTML = `
-          <div class="flex items-center gap-3 mb-3">
-            <i data-lucide="${categoryIcons[category] || 'image'}" class="h-6 w-6 text-[#FF6B00]"></i>
-            <h3 class="text-base font-semibold text-white group-hover:text-[#FF6B00] transition-colors">${data.display}</h3>
-          </div>
-          <p class="text-sm text-white/60">${data.items.length} design${data.items.length !== 1 ? 's' : ''}</p>
-          <div class="mt-4 flex items-center gap-2 text-xs text-white/50">
-            <span>Click to view gallery</span>
-            <i data-lucide="arrow-right" class="h-3 w-3"></i>
-          </div>
-        `;
-        
-        card.addEventListener('click', () => openGallery(category));
-        container.appendChild(card);
-      });
+  container.innerHTML = '';
+  Object.keys(portfolioData).forEach(category => {
+    const data = portfolioData[category];
+    
+    // Skip if no items in category
+    if (!data || !data.items || data.items.length === 0) return;
+    
+    const card = document.createElement('button');
+    card.className = 'shimmer-on-hover rounded-xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 hover:border-white/20 transition-colors text-left group cursor-pointer';
+    card.innerHTML = `
+      <div class="flex items-center gap-3 mb-3">
+        <i data-lucide="${categoryIcons[category] || 'image'}" class="h-6 w-6 text-[#FF6B00]"></i>
+        <h3 class="text-base font-semibold text-white group-hover:text-[#FF6B00] transition-colors">${data.display}</h3>
+      </div>
+      <p class="text-sm text-white/60">${data.items.length} design${data.items.length !== 1 ? 's' : ''}</p>
+      <div class="mt-4 flex items-center gap-2 text-xs text-white/50">
+        <span>Click to view gallery</span>
+        <i data-lucide="arrow-right" class="h-3 w-3"></i>
+      </div>
+    `;
+    
+    card.addEventListener('click', () => openGallery(category));
+    container.appendChild(card);
+  });
 
-      if (window.lucide) window.lucide.createIcons();
-    }
+  if (window.lucide) window.lucide.createIcons();
+}
 
 function scrollToPortfolio() {
   const portfolioSection = document.getElementById('portfolio');
@@ -3149,18 +3379,236 @@ window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
 // Toast function (if not already defined)
+// Enhanced toast function with better visibility
 function showToast(message, type = 'info') {
+  // Remove any existing toasts first
+  document.querySelectorAll('.custom-toast').forEach(t => t.remove());
+  
   const toast = document.createElement('div');
-  toast.className = `fixed top-20 right-4 z-[200] rounded-lg border px-4 py-3 shadow-lg animate-slide-in ${
+  toast.className = `custom-toast fixed top-20 right-4 z-[200] rounded-lg border px-4 py-3 shadow-lg backdrop-blur-sm ${
     type === 'success' ? 'bg-green-500/10 border-green-500/50 text-green-400' :
     type === 'error' ? 'bg-red-500/10 border-red-500/50 text-red-400' :
     'bg-blue-500/10 border-blue-500/50 text-blue-400'
   }`;
-  toast.innerHTML = `<p class="text-sm">${message}</p>`;
+  
+  const icon = type === 'success' ? 'check-circle' : 
+               type === 'error' ? 'alert-circle' : 
+               'info';
+  
+  toast.innerHTML = `
+    <div class="flex items-center gap-2">
+      <i data-lucide="${icon}" class="h-4 w-4 flex-shrink-0"></i>
+      <p class="text-sm">${message}</p>
+    </div>
+  `;
+  
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 5000);
+  
+  if (window.lucide) window.lucide.createIcons();
+  
+  // Slide in animation
+  setTimeout(() => {
+    toast.style.transform = 'translateX(0)';
+    toast.style.opacity = '1';
+  }, 10);
+  
+  // Auto-remove after delay (longer for errors)
+  const delay = type === 'error' ? 8000 : 5000;
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => toast.remove(), 300);
+  }, delay);
 }
 
+// Verify cache data integrity
+function verifyCacheData() {
+  console.log('🔍 Verifying cache data...');
+  
+  const verifications = {
+    carousel: {
+      data: getCachedData(CACHE_KEYS.CAROUSEL),
+      valid: false,
+      message: ''
+    },
+    portfolio: {
+      data: getCachedData(CACHE_KEYS.PORTFOLIO),
+      valid: false,
+      message: ''
+    },
+    services: {
+      data: getCachedData(CACHE_KEYS.SERVICES),
+      valid: false,
+      message: ''
+    },
+    settings: {
+      data: getCachedData(CACHE_KEYS.SETTINGS),
+      valid: false,
+      message: ''
+    },
+    highlights: {
+      data: getCachedData(CACHE_KEYS.HIGHLIGHTS),
+      valid: false,
+      message: ''
+    },
+    reviews: {
+      data: getCachedData(CACHE_KEYS.REVIEWS),
+      valid: false,
+      message: ''
+    },
+    team: {
+      data: getCachedData(CACHE_KEYS.TEAM),
+      valid: false,
+      message: ''
+    }
+  };
+  
+  // Verify carousel
+  if (Array.isArray(verifications.carousel.data) && verifications.carousel.data.length > 0) {
+    verifications.carousel.valid = true;
+    verifications.carousel.message = `${verifications.carousel.data.length} slides`;
+  } else {
+    verifications.carousel.message = 'No data';
+  }
+  
+  // Verify portfolio
+  if (verifications.portfolio.data && typeof verifications.portfolio.data === 'object') {
+    const catCount = Object.keys(verifications.portfolio.data).length;
+    if (catCount > 0) {
+      verifications.portfolio.valid = true;
+      verifications.portfolio.message = `${catCount} categories`;
+    } else {
+      verifications.portfolio.message = 'No categories';
+    }
+  } else {
+    verifications.portfolio.message = 'Invalid structure';
+  }
+  
+  // Verify services
+  if (Array.isArray(verifications.services.data) && verifications.services.data.length > 0) {
+    verifications.services.valid = true;
+    verifications.services.message = `${verifications.services.data.length} services`;
+  } else {
+    verifications.services.message = 'No data';
+  }
+  
+  // Verify settings
+  if (verifications.settings.data && verifications.settings.data.contact) {
+    verifications.settings.valid = true;
+    verifications.settings.message = 'Contact info present';
+  } else {
+    verifications.settings.message = 'Missing contact info';
+  }
+  
+  // Verify highlights
+  if (Array.isArray(verifications.highlights.data) && verifications.highlights.data.length > 0) {
+    verifications.highlights.valid = true;
+    verifications.highlights.message = `${verifications.highlights.data.length} highlights`;
+  } else {
+    verifications.highlights.message = 'No data';
+  }
+  
+  // Verify reviews
+  if (Array.isArray(verifications.reviews.data) && verifications.reviews.data.length > 0) {
+    verifications.reviews.valid = true;
+    verifications.reviews.message = `${verifications.reviews.data.length} reviews`;
+  } else {
+    verifications.reviews.message = 'No data';
+  }
+  
+  // Verify team
+  if (Array.isArray(verifications.team.data) && verifications.team.data.length > 0) {
+    verifications.team.valid = true;
+    verifications.team.message = `${verifications.team.data.length} members`;
+  } else {
+    verifications.team.message = 'No data';
+  }
+  
+  // Print results
+  console.log('📊 Cache Verification Results:');
+  Object.keys(verifications).forEach(key => {
+    const status = verifications[key].valid ? '✅' : '❌';
+    console.log(`  ${status} ${key}: ${verifications[key].message}`);
+  });
+  
+  const validCount = Object.values(verifications).filter(v => v.valid).length;
+  const totalCount = Object.keys(verifications).length;
+  
+  console.log(`\n📈 Overall: ${validCount}/${totalCount} sections have valid cache data`);
+  
+  return verifications;
+}
+
+// Add to window for manual testing
+window.verifyCacheData = verifyCacheData;
+
+// Debug functions for testing (accessible from browser console)
+window.debugCache = {
+  // View all cached data
+  viewAll: function() {
+    console.log('=== CACHED DATA ===');
+    console.log('Carousel:', getCachedData(CACHE_KEYS.CAROUSEL));
+    console.log('Portfolio:', getCachedData(CACHE_KEYS.PORTFOLIO));
+    console.log('Services:', getCachedData(CACHE_KEYS.SERVICES));
+    console.log('Settings:', getCachedData(CACHE_KEYS.SETTINGS));
+    console.log('Highlights:', getCachedData(CACHE_KEYS.HIGHLIGHTS));
+    console.log('Reviews:', getCachedData(CACHE_KEYS.REVIEWS));
+    console.log('Team:', getCachedData(CACHE_KEYS.TEAM));
+    console.log('Timestamp:', localStorage.getItem(CACHE_KEYS.TIMESTAMP));
+  },
+  
+  // Test cache loading
+  testLoad: async function() {
+    console.log('🧪 Testing cache load...');
+    try {
+      await loadFromCache();
+      console.log('✅ Cache load test passed');
+    } catch (error) {
+      console.error('❌ Cache load test failed:', error);
+    }
+  },
+  
+  // Test fallback loading
+  testFallback: async function() {
+    console.log('🧪 Testing fallback load...');
+    fallbackDataLoaded = false; // Reset flag
+    try {
+      const result = await loadFallbackData();
+      console.log(result ? '✅ Fallback test passed' : '❌ Fallback test failed');
+    } catch (error) {
+      console.error('❌ Fallback test failed:', error);
+    }
+  },
+  
+  // Clear cache and reload
+  clearAndReload: function() {
+    console.log('🗑️ Clearing cache...');
+    clearCache();
+    console.log('🔄 Reloading page...');
+    setTimeout(() => location.reload(), 1000);
+  },
+  
+  // Verify cache
+  verify: function() {
+    return verifyCacheData();
+  },
+  
+  // Force offline mode test
+  forceOffline: function() {
+    console.log('🔌 Simulating offline mode...');
+    firebaseAvailable = false;
+    clearCache();
+    console.log('🔄 Reload page to test offline behavior');
+  }
+};
+
+console.log('🐛 Debug tools loaded. Use window.debugCache to test:');
+console.log('  debugCache.viewAll() - View all cached data');
+console.log('  debugCache.testLoad() - Test cache loading');
+console.log('  debugCache.testFallback() - Test fallback loading');
+console.log('  debugCache.verify() - Verify cache integrity');
+console.log('  debugCache.clearAndReload() - Clear cache and reload');
+console.log('  debugCache.forceOffline() - Simulate offline mode');
 
 // ========== COOKIE BANNER & VISIT TRACKING ==========
 
@@ -3178,44 +3626,35 @@ window.initCookieBanner = function() {
   
   console.log('Consent status:', consent ? 'EXISTS' : 'NONE');
   
-  // Show banner if no consent decision made
+  // Only show banner if NO consent exists
   if (!consent) {
-    console.log('📢 No consent found - will show banner');
+    console.log('📢 No consent found - will show banner after loader');
     
-    // Wait for loader to disappear before showing banner
-    let attempts = 0;
-    const maxAttempts = 50; // 5 seconds max (50 * 100ms)
-    
-    const checkLoader = setInterval(() => {
-      attempts++;
+    // Wait for loader to fully disappear
+    const showBanner = () => {
       const loader = document.getElementById('pageLoader');
       const loaderHidden = !loader || loader.style.display === 'none' || window.getComputedStyle(loader).opacity === '0';
       
-      if (loaderHidden || attempts >= maxAttempts) {
-        clearInterval(checkLoader);
+      if (loaderHidden) {
+        // Remove hide classes, add show class
+        banner.classList.remove('hide', 'opacity-0', 'pointer-events-none');
+        banner.classList.add('show');
+        console.log('🍪 Banner now visible');
         
-        if (attempts >= maxAttempts) {
-          console.warn('⚠️ Loader check timed out - showing banner anyway');
-        } else {
-          console.log('✅ Loader gone - showing banner');
-        }
-        
-        setTimeout(() => {
-          banner.classList.remove('opacity-0', 'pointer-events-none', 'hide');
-          banner.classList.add('show');
-          console.log('🍪 Banner should now be visible');
-          
-          if (window.lucide) {
-            window.lucide.createIcons();
-            console.log('✅ Lucide icons refreshed in banner');
-          }
-        }, 800);
+        if (window.lucide) window.lucide.createIcons();
+      } else {
+        // Loader still visible, check again
+        setTimeout(showBanner, 200);
       }
-    }, 100);
+    };
+    
+    // Start checking after 1 second
+    setTimeout(showBanner, 1000);
   
   } else {
-    console.log('✅ Consent already given - banner hidden');
-    banner.classList.add('hide');
+    // Consent exists - ensure banner stays hidden
+    console.log('✅ Consent already given - keeping banner hidden');
+    banner.style.display = 'none';
   }
 }
 
@@ -3228,11 +3667,13 @@ document.getElementById('acceptCookiesBtn')?.addEventListener('click', async () 
   
   const banner = document.getElementById('cookieBanner');
   if (banner) {
-    banner.classList.add('hide');
+    // Hide banner immediately
     banner.classList.remove('show');
+    banner.classList.add('hide');
     
+    // Force display none
     setTimeout(() => {
-      banner.classList.add('opacity-0', 'pointer-events-none');
+      banner.style.display = 'none';
     }, 300);
   }
   
@@ -3258,11 +3699,12 @@ document.getElementById('savePreferencesBtn')?.addEventListener('click', async (
   
   const banner = document.getElementById('cookieBanner');
   if (banner) {
-    banner.classList.add('hide');
+    // FIXED: Permanently hide banner
+    banner.classList.add('hide', 'opacity-0', 'pointer-events-none');
     banner.classList.remove('show');
     
     setTimeout(() => {
-      banner.classList.add('opacity-0', 'pointer-events-none');
+      banner.style.display = 'none';
     }, 300);
   }
   
@@ -3622,8 +4064,8 @@ console.log('  testCookieSave() - Save preferences');
   </script>
 
 <!-- Cookie Consent Banner -->
-<div id="cookieBanner" class="fixed bottom-4 right-4 z-[10000] max-w-sm rounded-xl border border-white/10 bg-[#0B0F19]/95 backdrop-blur-xl p-5 shadow-2xl opacity-0 pointer-events-none animate-slide-up transition-opacity duration-300">
-    <div class="flex items-start gap-3 mb-4">
+<div id="cookieBanner" class="fixed bottom-4 right-4 z-[10000] max-w-sm rounded-xl border border-white/10 bg-[#0B0F19]/95 backdrop-blur-xl p-5 shadow-2xl hide opacity-0 pointer-events-none transition-opacity duration-300">
+      <div class="flex items-start gap-3 mb-4">
     <div class="text-2xl">🍪</div>
     <div class="flex-1">
       <h3 class="text-base font-semibold text-white mb-2">Cookie Preferences</h3>
@@ -3718,18 +4160,22 @@ console.log('  testCookieSave() - Save preferences');
 /* Cookie banner states */
 #cookieBanner {
   transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateY(20px);
 }
 
 #cookieBanner.show {
   opacity: 1 !important;
   pointer-events: auto !important;
+  transform: translateY(0) !important;
+  display: block !important;
   animation: slide-up 0.5s ease-out forwards;
 }
 
 #cookieBanner.hide {
   opacity: 0 !important;
   pointer-events: none !important;
-  transform: translateY(20px);
+  transform: translateY(20px) !important;
+  display: none !important;
 }
 </style>
 
