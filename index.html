@@ -1461,13 +1461,6 @@ function updateVisitorDataAfterConsent() {
   }
 }
 
-// Check if should log visit (prevent refresh spam)
-function shouldLogVisit(lastVisit) {
-  if (!lastVisit) return true;
-  const thirtyMinutes = 30 * 60 * 1000;
-  return (Date.now() - lastVisit) > thirtyMinutes;
-}
-
 // ========== END COOKIE MANAGEMENT ==========
     
 // Cache management constants
@@ -1590,6 +1583,12 @@ async function loadFallbackData() {
     cacheData(CACHE_KEYS.REVIEWS, fallbackData.reviews || []);
     cacheData(CACHE_KEYS.TEAM, fallbackData.teamMembers || []);
     
+    // ✅ NEW: Also store in window for render functions
+    window._cachedServices = fallbackData.services || [];
+    window._cachedHighlights = fallbackData.heroHighlights || [];
+    window._cachedReviews = fallbackData.reviews || [];
+    window._cachedTeam = fallbackData.teamMembers || [];
+    
     console.log('✅ Fallback data cached');
     
     fallbackDataLoaded = true;
@@ -1650,25 +1649,86 @@ function showFallbackIndicator() {
   indicator.id = 'fallbackIndicator';
   indicator.className = 'fixed top-20 right-4 z-[90] rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-4 py-3 shadow-lg backdrop-blur-sm';
   indicator.innerHTML = `
-    <div class="flex items-center gap-3">
-      <i data-lucide="database" class="h-5 w-5 text-yellow-400 flex-shrink-0"></i>
-      <div class="text-sm">
-        <p class="text-yellow-400 font-medium">Using Cached Data</p>
-        <p class="text-white/60 text-xs mt-0.5">Firebase temporarily unavailable</p>
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center gap-3">
+        <i data-lucide="database" class="h-5 w-5 text-yellow-400 flex-shrink-0"></i>
+        <div class="text-sm flex-1">
+          <p class="text-yellow-400 font-medium">Using Cached Data</p>
+          <p class="text-white/60 text-xs mt-0.5">Firebase temporarily unavailable</p>
+        </div>
+        <button onclick="document.getElementById('fallbackIndicator').remove()" class="text-white/40 hover:text-white">
+          <i data-lucide="x" class="h-4 w-4"></i>
+        </button>
       </div>
-      <button onclick="document.getElementById('fallbackIndicator').remove()" class="text-white/40 hover:text-white">
-        <i data-lucide="x" class="h-4 w-4"></i>
+      <button onclick="manualReconnect()" class="w-full rounded-md border border-yellow-500/50 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-400 hover:bg-yellow-500/20 transition-colors flex items-center justify-center gap-2">
+        <i data-lucide="refresh-cw" class="h-3 w-3"></i>
+        <span>Try Reconnecting Now</span>
       </button>
     </div>
   `;
   document.body.appendChild(indicator);
   if (window.lucide) window.lucide.createIcons();
   
-  // Auto-hide after 10 seconds
-  setTimeout(() => {
-    indicator?.remove();
-  }, 10000);
+  // Don't auto-hide - let user dismiss manually
 }
+
+// Manual reconnect function
+async function manualReconnect() {
+  const indicator = document.getElementById('fallbackIndicator');
+  const btn = indicator?.querySelector('button[onclick="manualReconnect()"]');
+  
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `
+      <div class="loading-spinner" style="width: 14px; height: 14px; border-width: 2px;"></div>
+      <span>Reconnecting...</span>
+    `;
+  }
+  
+  try {
+    console.log('🔄 Manual reconnect attempt...');
+    const testDoc = await getDoc(doc(db, 'siteSettings', 'main'));
+    
+    if (testDoc.exists()) {
+      console.log('✅ Firebase reconnected!');
+      
+      // Clear retry interval
+      if (autoRetryInterval) {
+        clearInterval(autoRetryInterval);
+        autoRetryInterval = null;
+      }
+      
+      firebaseAvailable = true;
+      usingFallback = false;
+      
+      // Remove indicator
+      indicator?.remove();
+      
+      // Reload data
+      showToast('Reconnected! Reloading fresh data...', 'success');
+      await loadSiteData();
+      
+    } else {
+      throw new Error('Firebase still unavailable');
+    }
+  } catch (error) {
+    console.error('❌ Manual reconnect failed:', error);
+    
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `
+        <i data-lucide="refresh-cw" class="h-3 w-3"></i>
+        <span>Try Reconnecting Now</span>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+    }
+    
+    showToast('Still offline. Will keep trying automatically.', 'error');
+  }
+}
+
+// Make function globally accessible
+window.manualReconnect = manualReconnect;
 
 // Start auto-retry to reconnect to Firebase
 function startAutoRetry() {
@@ -1704,9 +1764,145 @@ function startAutoRetry() {
   }, 5 * 60 * 1000); // Every 5 minutes
 }
 
+// Show critical error modal
+function showCriticalError() {
+  const errorModal = document.createElement('div');
+  errorModal.id = 'criticalErrorModal';
+  errorModal.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4';
+  errorModal.innerHTML = `
+    <div class="absolute inset-0 bg-black/90 backdrop-blur-md"></div>
+    <div class="relative max-w-md w-full rounded-xl border border-red-500/50 bg-[#0B0F19] p-6 shadow-2xl">
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10 mb-4">
+          <i data-lucide="wifi-off" class="h-8 w-8 text-red-400"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-white mb-2">Connection Error</h3>
+        <p class="text-sm text-white/70 mb-6 leading-relaxed">
+          We couldn't load the website content. This could be due to:
+        </p>
+        <ul class="text-left text-sm text-white/60 mb-6 space-y-2">
+          <li class="flex items-start gap-2">
+            <i data-lucide="x" class="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5"></i>
+            <span>No internet connection</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i data-lucide="x" class="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5"></i>
+            <span>Server temporarily unavailable</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i data-lucide="x" class="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5"></i>
+            <span>Missing fallback data file</span>
+          </li>
+        </ul>
+        <div class="flex flex-col gap-3">
+          <button onclick="location.reload()" class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-[#FF6B00] px-4 py-3 text-sm font-medium text-white hover:bg-[#ff7b1b] transition-colors">
+            <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+            Retry Now
+          </button>
+          <a href="https://wa.me/2348147732687?text=${encodeURIComponent('Hello, I\'m having trouble loading your website. Can you help?')}" target="_blank" rel="noopener" class="w-full inline-flex items-center justify-center gap-2 rounded-md border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 hover:bg-white/10 transition-colors">
+            <i data-lucide="message-circle" class="h-4 w-4"></i>
+            Contact Support
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(errorModal);
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// Debug panel for troubleshooting
+function showDebugPanel() {
+  const panel = document.createElement('div');
+  panel.id = 'debugPanel';
+  panel.className = 'fixed bottom-4 left-4 z-[100] max-w-sm rounded-lg border border-blue-500/50 bg-[#0B0F19]/95 backdrop-blur-xl p-4 shadow-xl';
+  
+  const verification = verifyCacheData();
+  const cacheValid = isCacheValid();
+  
+  panel.innerHTML = `
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <i data-lucide="bug" class="h-4 w-4 text-blue-400"></i>
+        <h4 class="text-sm font-semibold text-white">Debug Info</h4>
+      </div>
+      <button onclick="document.getElementById('debugPanel').remove()" class="text-white/40 hover:text-white">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    
+    <div class="space-y-2 text-xs">
+      <div class="flex justify-between">
+        <span class="text-white/60">Firebase:</span>
+        <span class="${firebaseAvailable ? 'text-green-400' : 'text-red-400'}">${firebaseAvailable ? 'Connected' : 'Offline'}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-white/60">Using Fallback:</span>
+        <span class="${usingFallback ? 'text-yellow-400' : 'text-white/80'}">${usingFallback ? 'Yes' : 'No'}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-white/60">Cache Valid:</span>
+        <span class="${cacheValid ? 'text-green-400' : 'text-red-400'}">${cacheValid ? 'Yes' : 'No'}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-white/60">Carousel:</span>
+        <span class="text-white/80">${carouselSlides.length} slides</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-white/60">Portfolio:</span>
+        <span class="text-white/80">${Object.keys(portfolioData).length} categories</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-white/60">Services:</span>
+        <span class="text-white/80">${verification.services.message}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-white/60">Reviews:</span>
+        <span class="text-white/80">${verification.reviews.message}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-white/60">Team:</span>
+        <span class="text-white/80">${verification.team.message}</span>
+      </div>
+    </div>
+    
+    <div class="mt-3 pt-3 border-t border-white/10 flex gap-2">
+      <button onclick="debugCache.clearAndReload()" class="flex-1 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80 hover:bg-white/10">
+        Clear Cache
+      </button>
+      <button onclick="debugCache.testFallback()" class="flex-1 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80 hover:bg-white/10">
+        Test Fallback
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(panel);
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// Make globally accessible
+window.showDebugPanel = showDebugPanel;
+
+// Add keyboard shortcut: Ctrl+Shift+D
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+    e.preventDefault();
+    if (document.getElementById('debugPanel')) {
+      document.getElementById('debugPanel').remove();
+    } else {
+      showDebugPanel();
+    }
+  }
+});
+
+console.log('🐛 Debug panel: Press Ctrl+Shift+D or call showDebugPanel()');
+
     // Initialize
     document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🚀 Page initializing...');
+  console.log('🚀 ============ PAGE INITIALIZING ============');
+  console.log('🚀 URL:', window.location.href);
+  console.log('🚀 Time:', new Date().toISOString());
   
   if (window.lucide) window.lucide.createIcons();
   
@@ -1714,18 +1910,23 @@ function startAutoRetry() {
   initializeTheme();
 
   // Initialize cookie banner ONLY after loader completes
-  // NO setTimeout here - initCookieBanner handles timing internally
   if (window.initCookieBanner) {
+    console.log('🍪 Initializing cookie banner...');
     window.initCookieBanner();
   }
   
   // Track page visit ONLY if consent already given
   const existingConsent = hasAnalyticsConsent();
+  console.log('🍪 Existing consent status:', existingConsent);
 
   if (existingConsent === true) {
+    console.log('✅ Consent given - tracking visit...');
     await trackPageVisit();
+  } else if (existingConsent === false) {
+    console.log('❌ Consent declined - logging anonymous only...');
+    await trackPageVisit(); // Still call it to log anonymous
   } else {
-    console.log('Waiting for user consent before tracking...');
+    console.log('⏳ No consent decision yet - waiting for user...');
   }
 
   // Show page loader
@@ -1789,15 +1990,22 @@ function startAutoRetry() {
     console.error('Error details:', error.message);
     firebaseAvailable = false;
     
+    console.log('');
+    console.log('════════════════════════════════════════');
+    console.log('🔄 FALLBACK RECOVERY SEQUENCE INITIATED');
+    console.log('════════════════════════════════════════');
+    console.log('');
+    
     // Try cache first
     if (isCacheValid()) {
-      console.log('📦 Cache is valid - attempting to use cached data...');
+      console.log('📦 Step 1: Valid cache found - attempting to load...');
       usingFallback = true;
       
       try {
         const cacheSuccess = await loadFromCache();
         if (cacheSuccess) {
-          console.log('✅ Successfully loaded from cache');
+          console.log('✅ SUCCESS: Loaded from cache');
+          console.log('═══════════════════════════════════════');
           showFallbackIndicator();
           startAutoRetry();
           return;
@@ -1805,34 +2013,57 @@ function startAutoRetry() {
           throw new Error('Cache rendering incomplete');
         }
       } catch (cacheError) {
-        console.error('❌ Cache load/render failed:', cacheError);
-        console.error('Error details:', cacheError.message);
+        console.error('❌ Step 1 FAILED:', cacheError.message);
         showToast('Cache corrupted, loading fallback data...', 'info');
-        // Continue to fallback-data.json
       }
     } else {
-      console.log('⚠️ Cache is invalid or expired');
+      console.log('⚠️ Step 1: Cache invalid or expired - skipping');
     }
     
     // Try fallback-data.json
-    console.log('📥 Attempting to load fallback-data.json...');
+    console.log('📥 Step 2: Attempting to load fallback-data.json...');
     const fallbackLoaded = await loadFallbackData();
     
     if (fallbackLoaded) {
-      console.log('✅ Fallback data loaded and rendered successfully');
+      console.log('✅ SUCCESS: Loaded from fallback-data.json');
+      console.log('═══════════════════════════════════════');
       usingFallback = true;
       showFallbackIndicator();
       startAutoRetry();
     } else {
-      // Ultimate failure - show error
-      console.error('❌ All fallback methods failed');
-      showToast('Unable to load content. Please check your connection.', 'error');
+      console.error('❌ Step 2 FAILED: fallback-data.json load failed');
+      console.log('');
+      console.log('════════════════════════════════════════');
+      console.log('❌ ALL RECOVERY METHODS EXHAUSTED');
+      console.log('════════════════════════════════════════');
+      console.log('');
+      console.log('Troubleshooting steps:');
+      console.log('1. Check internet connection');
+      console.log('2. Verify fallback-data.json exists in project root');
+      console.log('3. Check browser console for detailed errors');
+      console.log('4. Press Ctrl+Shift+D to open debug panel');
+      console.log('');
+      
+      showCriticalError();
       
       const sections = ['servicesList', 'portfolioCategories', 'heroHighlights', 'reviewsList', 'teamMembersGrid'];
       sections.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.innerHTML = '<p class="text-white/60">Unable to load content. Please refresh the page.</p>';
+        if (el) el.innerHTML = `
+          <div class="text-center py-12">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10 mb-4">
+              <i data-lucide="alert-triangle" class="h-8 w-8 text-red-400"></i>
+            </div>
+            <p class="text-white/60 mb-2">Unable to load content</p>
+            <button onclick="location.reload()" class="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10">
+              <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+              Refresh Page
+            </button>
+          </div>
+        `;
       });
+      
+      if (window.lucide) window.lucide.createIcons();
     }
   }
 }
@@ -1981,7 +2212,7 @@ async function renderSettings() {
 async function renderServices() {
   console.log('📦 Rendering services...');
   
-  const services = getCachedData(CACHE_KEYS.SERVICES) || [];
+  const services = window._cachedServices || getCachedData(CACHE_KEYS.SERVICES) || [];  // ✅ FIXED
   const listEl = document.getElementById('servicesList');
   
   if (!listEl) {
@@ -2054,7 +2285,7 @@ async function renderServices() {
 async function renderReviews() {
   console.log('📦 Rendering reviews...');
   
-  const reviews = getCachedData(CACHE_KEYS.REVIEWS) || [];
+  const reviews = window._cachedReviews || getCachedData(CACHE_KEYS.REVIEWS) || [];  // ✅ FIXED
   const container = document.getElementById('reviewsList');
   
   if (!container) {
@@ -2115,7 +2346,7 @@ async function renderReviews() {
 async function renderHighlights() {
   console.log('📦 Rendering highlights...');
   
-  const highlights = getCachedData(CACHE_KEYS.HIGHLIGHTS) || [];
+  const highlights = window._cachedHighlights || getCachedData(CACHE_KEYS.HIGHLIGHTS) || [];  // ✅ FIXED
   const container = document.getElementById('heroHighlights');
   
   if (!container) {
@@ -2156,7 +2387,7 @@ async function renderHighlights() {
 async function renderTeam() {
   console.log('📦 Rendering team members...');
   
-  const team = getCachedData(CACHE_KEYS.TEAM) || [];
+  const team = window._cachedTeam || getCachedData(CACHE_KEYS.TEAM) || [];  // ✅ FIXED
   const container = document.getElementById('teamMembersGrid');
   
   if (!container) {
@@ -3680,7 +3911,13 @@ document.getElementById('acceptCookiesBtn')?.addEventListener('click', async () 
   showToast('Cookie preferences saved!', 'success');
   
   // Track visit now that consent is given
-  await trackPageVisit();
+  console.log('🎯 Cookie accepted - triggering trackPageVisit()...');
+  try {
+    await trackPageVisit();
+    console.log('✅ Initial tracking complete after consent');
+  } catch (error) {
+    console.error('❌ Failed to track after consent:', error);
+  }
 });
 
 // Settings button
@@ -3835,9 +4072,14 @@ function getCurrentPage() {
   return pageNames[hash] || 'Home';
 }
 
-// Track page visit
+
+
+// Track page visit - ENHANCED VERSION
 async function trackPageVisit() {
   console.log('📊 trackPageVisit() called');
+  console.log('🔥 Current URL:', window.location.href);
+  console.log('🔥 Current Page:', getCurrentPage());
+  console.log('🔥 Timestamp:', new Date().toISOString());
   
   try {
     // Check consent
@@ -3870,15 +4112,23 @@ async function trackPageVisit() {
     const visitor = getVisitorData();
     console.log('4️⃣ Visitor data:', visitor);
     
-    // Check if should log
-    if (!shouldLogVisit(visitor.lastVisit)) {
-      console.log('⏭️ Visit not logged - too soon since last visit');
-      return;
-    }
+    // ========== NEW: Session management ==========
+    const session = getOrCreateSessionId();
+    console.log('5️⃣ Session info:', session);
     
-    console.log('5️⃣ Getting location...');
+    // Get page navigation data
+    const previousPage = getPreviousPage();
+    const timeOnPreviousPage = getTimeOnPreviousPage();
+    const currentPage = getCurrentPage();
+    
+    console.log('6️⃣ Navigation:', { previousPage, timeOnPreviousPage, currentPage });
+    
+    // Update current page in session
+    setCurrentPage(currentPage);
+    
+    console.log('7️⃣ Getting location...');
     const location = await getVisitorLocation();
-    console.log('6️⃣ Location:', location);
+    console.log('8️⃣ Location:', location);
     
     // Get device info
     const deviceInfo = {
@@ -3891,35 +4141,39 @@ async function trackPageVisit() {
       referrer: document.referrer || 'Direct'
     };
     
-    console.log('7️⃣ Device info:', deviceInfo);
+    console.log('9️⃣ Device info:', deviceInfo);
     
-    // Prepare visit data
+    // Prepare ENHANCED visit data
     const visitData = {
       timestamp: serverTimestamp(),
       visitorId: visitor.visitorId,
       isNewVisitor: visitor.isNewVisitor,
       visitCount: visitor.visitCount || 1,
       consentGiven: visitor.consentGiven !== false,
-      page: getCurrentPage(),
+      
+      // Session data
+      sessionId: session.sessionId,
+      isNewSession: session.isNewSession,
+      
+      // Page navigation data
+      page: currentPage,
+      previousPage: previousPage,
+      timeOnPreviousPage: timeOnPreviousPage, // in seconds
+      
+      // Location and device
       location: location,
-      deviceInfo: deviceInfo,
-      sessionId: sessionStorage.getItem('session_id') || generateSessionId()
+      deviceInfo: deviceInfo
     };
     
-    console.log('8️⃣ Visit data prepared:', visitData);
-    
-    // Save session ID
-    if (!sessionStorage.getItem('session_id')) {
-      sessionStorage.setItem('session_id', visitData.sessionId);
-    }
+    console.log('🔟 Enhanced visit data prepared:', visitData);
     
     // Log to Firebase
-    console.log('9️⃣ Writing to Firebase...');
+    console.log('1️⃣1️⃣ Writing to Firebase...');
     const docRef = await addDoc(collection(db, 'pageViews'), visitData);
     console.log('✅ Visit tracked successfully! Doc ID:', docRef.id);
     
     // Update visitor stats summary
-    console.log('🔟 Updating stats...');
+    console.log('1️⃣2️⃣ Updating stats...');
     await updateVisitorStats(visitData);
     console.log('✅ Stats updated');
     
@@ -3934,7 +4188,64 @@ function generateSessionId() {
   return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// Update visitor stats summary
+// ========== NEW SESSION MANAGEMENT FUNCTIONS ==========
+
+// Get or create session ID with expiry logic
+function getOrCreateSessionId() {
+  const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+  
+  const existingSessionId = sessionStorage.getItem('session_id');
+  const lastActivity = sessionStorage.getItem('session_last_activity');
+  
+  const now = Date.now();
+  
+  // If session exists and is still valid (within 30 minutes)
+  if (existingSessionId && lastActivity) {
+    const timeSinceLastActivity = now - parseInt(lastActivity);
+    
+    if (timeSinceLastActivity < SESSION_TIMEOUT) {
+      // Session still valid - update last activity time
+      sessionStorage.setItem('session_last_activity', now.toString());
+      return { sessionId: existingSessionId, isNewSession: false };
+    }
+  }
+  
+  // Create new session (either first time or session expired)
+  const newSessionId = generateSessionId();
+  sessionStorage.setItem('session_id', newSessionId);
+  sessionStorage.setItem('session_last_activity', now.toString());
+  sessionStorage.setItem('session_start_time', now.toString());
+  
+  return { sessionId: newSessionId, isNewSession: true };
+}
+
+// Get previous page from session
+function getPreviousPage() {
+  return sessionStorage.getItem('current_page') || null;
+}
+
+// Update current page in session
+function setCurrentPage(page) {
+  sessionStorage.setItem('current_page', page);
+  sessionStorage.setItem('page_view_time', Date.now().toString());
+}
+
+// Calculate time spent on previous page
+function getTimeOnPreviousPage() {
+  const pageViewTime = sessionStorage.getItem('page_view_time');
+  if (!pageViewTime) return null;
+  
+  const timeSpent = Date.now() - parseInt(pageViewTime);
+  
+  // Sanity check: ignore if more than 30 minutes (user likely left tab)
+  if (timeSpent > 30 * 60 * 1000) return null;
+  
+  return Math.floor(timeSpent / 1000); // Return seconds
+}
+
+// ========== END SESSION MANAGEMENT FUNCTIONS ==========
+
+// Update visitor stats summary - ENHANCED VERSION
 async function updateVisitorStats(visitData) {
   try {
     const statsRef = doc(db, 'visitorStats', 'summary');
@@ -3946,12 +4257,18 @@ async function updateVisitorStats(visitData) {
       // Update counts
       const updates = {
         totalVisits: (currentStats.totalVisits || 0) + 1,
+        totalPageViews: (currentStats.totalPageViews || 0) + 1, // NEW: Track all page views
         lastUpdated: serverTimestamp()
       };
       
       // Update unique visitors count
       if (visitData.isNewVisitor) {
         updates.uniqueVisitors = (currentStats.uniqueVisitors || 0) + 1;
+      }
+      
+      // NEW: Track unique sessions
+      if (visitData.isNewSession) {
+        updates.totalSessions = (currentStats.totalSessions || 0) + 1;
       }
       
       // Update popular pages
@@ -3966,14 +4283,37 @@ async function updateVisitorStats(visitData) {
         updates.countries = countries;
       }
       
+      // NEW: Track page transitions (navigation flow)
+      if (visitData.previousPage) {
+        const pageTransitions = currentStats.pageTransitions || {};
+        const transitionKey = `${visitData.previousPage} → ${visitData.page}`;
+        pageTransitions[transitionKey] = (pageTransitions[transitionKey] || 0) + 1;
+        updates.pageTransitions = pageTransitions;
+      }
+      
+      // NEW: Track average time on page
+      if (visitData.timeOnPreviousPage && visitData.previousPage) {
+        const pageDurations = currentStats.pageDurations || {};
+        if (!pageDurations[visitData.previousPage]) {
+          pageDurations[visitData.previousPage] = { totalTime: 0, viewCount: 0 };
+        }
+        pageDurations[visitData.previousPage].totalTime += visitData.timeOnPreviousPage;
+        pageDurations[visitData.previousPage].viewCount += 1;
+        updates.pageDurations = pageDurations;
+      }
+      
       await updateDoc(statsRef, updates);
     } else {
       // Create initial stats
       await setDoc(statsRef, {
         totalVisits: 1,
+        totalPageViews: 1,
+        totalSessions: visitData.isNewSession ? 1 : 0,
         uniqueVisitors: visitData.isNewVisitor ? 1 : 0,
         popularPages: { [visitData.page]: 1 },
         countries: visitData.location.country !== 'Unknown' ? { [visitData.location.country]: 1 } : {},
+        pageTransitions: {},
+        pageDurations: {},
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp()
       });
