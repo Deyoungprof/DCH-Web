@@ -1036,7 +1036,7 @@
       try {
         await signInWithEmailAndPassword(auth, email, pass);
         document.getElementById('loginBtnText').innerHTML = '✓ Success! Redirecting...';
-        setTimeout(() => window.location.href = '../client-chat.html', 600);
+        setTimeout(() => window.location.href = './client-chat.html', 600);
       } catch (err) {
         showError('loginError', 'loginErrorText', friendlyError(err.code));
         markFieldError(document.getElementById('loginPassword'));
@@ -1203,7 +1203,7 @@
         });
 
         clearInterval(timerInterval);
-        setTimeout(() => window.location.href = '../client-chat.html', 2200);
+        setTimeout(() => window.location.href = './client-chat.html', 2200);
 
       } catch (err) {
         loading.classList.remove('show');
